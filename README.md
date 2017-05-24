@@ -7,7 +7,13 @@
 $ ./preinstall.sh
 $ make
 ```
+# Dependencies
+libvncserver-dev
 
+On Debian jessie
+```sh
+$ sudo apt-get install libvncserver-dev 
+```
 # H264 encoder and transport stream encapsulator
 ```
 avc2ts -1.0.0
