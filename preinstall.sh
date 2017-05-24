@@ -1,5 +1,5 @@
-git clone git://github.com/kierank/libmpegts
+git clone git://github.com/F5OEO/libmpegts
 cd libmpegts
 ./configure
-./make
+make
 cd ../
