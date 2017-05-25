@@ -875,7 +875,42 @@ namespace rpi_omx
             ERR_OMX( OMX_SetParameter(component_, OMX_IndexParamCameraDeviceNumber, &device), "set camera device number");
         }
 
-        void setVideoFromat(const VideoFromat& videoFormat)
+
+        void getSensorModes(OMX_U32 Mode=OMX_ALL)
+        {
+  
+            Parameter<OMX_CONFIG_CAMERASENSORMODETYPE> sensor;
+            sensor->nPortIndex=Mode;
+            sensor->nModeIndex=0;
+            for(int i=1;i<100;i++)
+            {
+                if(OMX_GetParameter(component_, OMX_IndexConfigCameraSensorModes, &sensor)!=OMX_ErrorNone)
+                    {usleep(5000);}
+                else
+                    break;
+                
+            }
+            if(Mode==OMX_ALL)
+            {
+                for(int i=0;i<sensor->nNumModes;i++)
+                {
+                    sensor->nModeIndex=i;
+                     ERR_OMX( OMX_GetParameter(component_, OMX_IndexConfigCameraSensorModes, &sensor)," Get sensor mode");
+                    printf("Mode %d : %d x %d Padding %d-%d Fps %d-%d\n",sensor->nModeIndex,sensor->nWidth,sensor->nHeight,sensor->nPaddingRight,sensor->nPaddingDown,sensor->nFrameRateMin,sensor->nFrameRateMax);  
+                }
+            }
+            else
+            {
+                printf("Camera output used :  %d x %d Padding %d-%d Fps %d-%d\n",sensor->nWidth,sensor->nHeight,sensor->nPaddingRight,sensor->nPaddingDown,sensor->nFrameRateMin,sensor->nFrameRateMax);  
+            }
+        }
+
+        void getSensorCameraMode()
+        {
+               getSensorModes(OPORT_VIDEO); 
+        }
+        
+        void setVideoFromat(const VideoFromat& videoFormat,bool VideoPreview=false)
         {
             Parameter<OMX_PARAM_PORTDEFINITIONTYPE> portDef;
             getPortDefinition(OPORT_VIDEO, portDef);
@@ -888,14 +923,16 @@ namespace rpi_omx
             portDef->format.video.eColorFormat = OMX_COLOR_FormatYUV420PackedPlanar;
 
             setPortDefinition(OPORT_VIDEO, portDef);
-
-	    getPortDefinition(OPORT_PREVIEW, portDef);
-	portDef->format.video.nFrameWidth  = videoFormat.width;
-            portDef->format.video.nFrameHeight = videoFormat.height;
-            portDef->format.video.xFramerate   = videoFormat.framerate << 16;
-            portDef->format.video.nStride      = align(portDef->format.video.nFrameWidth, portDef->nBufferAlignment);
-            portDef->format.video.eColorFormat = OMX_COLOR_FormatYUV420PackedPlanar;
-	    setPortDefinition(OPORT_PREVIEW, portDef);
+            if(VideoPreview)
+            {
+	            getPortDefinition(OPORT_PREVIEW, portDef);
+	            portDef->format.video.nFrameWidth  = videoFormat.width;
+                portDef->format.video.nFrameHeight = videoFormat.height;
+                portDef->format.video.xFramerate   = videoFormat.framerate << 16;
+                portDef->format.video.nStride      = align(portDef->format.video.nFrameWidth, portDef->nBufferAlignment);
+                portDef->format.video.eColorFormat = OMX_COLOR_FormatYUV420PackedPlanar;
+	            setPortDefinition(OPORT_PREVIEW, portDef);
+            }   
             //setFramerate(videoFormat.framerate);
         }
 
@@ -1057,6 +1094,11 @@ namespace rpi_omx
         static const unsigned IPORT = 200;
         static const unsigned OPORT = 201;
 
+        static int32_t align(unsigned x, unsigned y)
+        {
+            return (x + y - 1) & (~(y - 1));
+        }
+
         Encoder()
         :   Component(cType, (OMX_PTR) this, &cbsEvents)
         {
@@ -1070,9 +1112,9 @@ namespace rpi_omx
             portDef->format.video.nFrameWidth  = cameraPortDef->format.video.nFrameWidth;
             portDef->format.video.nFrameHeight = cameraPortDef->format.video.nFrameHeight;
             portDef->format.video.xFramerate   = cameraPortDef->format.video.xFramerate;
-            portDef->format.video.nStride      = cameraPortDef->format.video.nStride;
+            portDef->format.video.nStride      = cameraPortDef->format.video.nStride; //SHould be aligned ?
             portDef->format.video.nBitrate     = bitrate;
-	   printf("FPS from camera=%x\n",cameraPortDef->format.video.xFramerate);	
+	   //printf("FPS from camera=%x\n",cameraPortDef->format.video.xFramerate);	
             if (framerate)
                 portDef->format.video.xFramerate = framerate<<16;
 
@@ -1097,7 +1139,7 @@ namespace rpi_omx
 		portDefI->format.video.nFrameWidth  = Videoformat.width;
             portDefI->format.video.nFrameHeight = Videoformat.height;
             portDefI->format.video.xFramerate   = framerate<<16;
-            portDefI->format.video.nStride      = Videoformat.width;//(portDefI->format.video.nFrameWidth + portDefI->nBufferAlignment - 1) & (~(portDefI->nBufferAlignment - 1));
+            portDefI->format.video.nStride      = align(Videoformat.width,portDefI->nBufferAlignment);//(portDefI->format.video.nFrameWidth + portDefI->nBufferAlignment - 1) & (~(portDefI->nBufferAlignment - 1));
 	portDefI->format.video.nSliceHeight=Videoformat.height;
 		portDefI->format.video.eColorFormat=OMX_COLOR_FormatYUV420PackedPlanar;
 	 setPortDefinition(IPORT, portDefI);	
@@ -1112,7 +1154,8 @@ namespace rpi_omx
 		portDef->format.video.nFrameWidth  = Videoformat.width;
 		portDef->format.video.nFrameHeight = Videoformat.height;
 		portDef->format.video.xFramerate= framerate<<16;
-		printf("FPS from output=%x\n",portDef->format.video.xFramerate);
+		//printf("FPS from output=%x\n",portDef->format.video.xFramerate);
+        printf("Aligned = %d Stride= %d\n",portDef->nBufferAlignment,portDef->format.video.nStride);
 	        setPortDefinition(OPORT, portDef);
 	}
 
@@ -1125,7 +1168,7 @@ namespace rpi_omx
             ERR_OMX( OMX_SetParameter(component_, OMX_IndexParamVideoPortFormat, &format), "set video format");
         }
 
-	void setProfileLevel(int Profile=OMX_VIDEO_AVCProfileMain,int Level=OMX_VIDEO_AVCLevel32)
+	void setProfileLevel(int Profile=OMX_VIDEO_AVCProfileMain,int Level=OMX_VIDEO_AVCLevel42)
         {
 	    //OMX_VIDEO_AVCProfileBaseline,OMX_VIDEO_AVCProfileMain,OMX_VIDEO_AVCProfileExtended, OMX_VIDEO_AVCProfileHigh
 	    //OMX_VIDEO_AVCLevel3
@@ -1146,7 +1189,7 @@ namespace rpi_omx
             brate->nPortIndex = OPORT;
             brate->eControlRate = type;
             brate->nTargetBitrate = bitrate;
-	    printf("AVC Video Bitrate set=%ld\n",bitrate);	
+	        // printf("AVC Video Bitrate set=%ld\n",bitrate);	
             ERR_OMX( OMX_SetParameter(component_, OMX_IndexParamVideoBitrate, &brate), "set bitrate");
         }
 
@@ -1161,7 +1204,7 @@ namespace rpi_omx
 		Parameter<OMX_VIDEO_CONFIG_AVCINTRAPERIOD> idr_st;
 		idr_st->nPortIndex= OPORT;
 	 	
-		printf("idr %d p%d\n",idr_st->nIDRPeriod,idr_st->nPFrames);
+		//printf("idr %d p%d\n",idr_st->nIDRPeriod,idr_st->nPFrames);
   		//idr_st->nPFrames=nPFrames;
 		ERR_OMX( OMX_GetParameter(component_, OMX_IndexConfigVideoAVCIntraPeriod, &idr_st)," Get idr");
 		idr_st->nPFrames=idr_period;
@@ -1919,7 +1962,7 @@ class TSEncaspulator
 	public:
 	 TSEncaspulator()
 	{
-		InternalBuffer=(uint8_t *)malloc(MAX_SIZE_PICTURE); //Fixme free to be done
+		InternalBuffer=(uint8_t *)malloc(MAX_SIZE_PICTURE); 
 	};
 	~TSEncaspulator()
 	{
@@ -1991,7 +2034,7 @@ class TSEncaspulator
 		ts_setup_transport_stream(writer, &tsmain);
    		ts_setup_sdt(writer);
    		ts_setup_mpegvideo_stream(writer, VideoPid,
-				     41,//3.2
+				     42,//3.2
                                      AVC_HIGH, //Fixme should pass Profile and Level
                                      VideoBitrate,
                                      40000,//Fix Me : should have to be calculated
@@ -2342,14 +2385,18 @@ private:
 	int DelayPTS;
 	struct timespec InitTime;
 	FILE *AudioIn=NULL;
+    bool VideoPreview=false;
 public:
 	void Init(VideoFromat &VideoFormat,char *FileName,char *Udp,int VideoBitrate,int TsBitrate,int SetDelayPts,int PMTPid,char *sdt,int fps=25,int IDRPeriod=100,int RowBySlice=0,int EnableMotionVectors=0)
 	{	
 		CurrentVideoFormat=VideoFormat;
 		DelayPTS=SetDelayPts;
 		 // configuring camera
-		camera.setVideoFromat(VideoFormat);
+       
+		camera.setVideoFromat(VideoFormat,VideoPreview);
 		camera.setImageDefaults();
+         camera.getSensorModes();
+         camera.getSensorCameraMode();   
             camera.setImageFilter(OMX_ALL, OMX_ImageFilterNoise);
 	AudioIn=fopen("/home/pi/rpidatv/scripts/output.aac","r+");
             while (!camera.ready())
@@ -2364,10 +2411,12 @@ public:
 		    
 		    Parameter<OMX_PARAM_PORTDEFINITIONTYPE> portDef;
 		    camera.getPortDefinition(Camera::OPORT_VIDEO, portDef);
-
-		    videorender.setupPortFromCamera(portDef);
-		videorender.SetDestRect(0,0,640,480);
-		    
+            
+            if(VideoPreview)
+            {
+    		    videorender.setupPortFromCamera(portDef);
+	        	videorender.SetDestRect(0,0,640,480);
+		    }
 		    portDef->format.video.nFrameWidth = vfResized.width;
 		    portDef->format.video.nFrameHeight = vfResized.height;
 	 if(VideoBitrate<150000)
@@ -2414,16 +2463,17 @@ public:
 		    //encoder.setPeakRate(VIDEO_BITRATE_LOW/1000);
 		    //encoder.setMaxFrameLimits(10000*8);
 		}
-ERR_OMX( OMX_SetupTunnel(camera.component(), Camera::OPORT_VIDEO, encoder.component(), Encoder::IPORT),
+        ERR_OMX( OMX_SetupTunnel(camera.component(), Camera::OPORT_VIDEO, encoder.component(), Encoder::IPORT),
                 "tunnel camera.video -> encoder.input");
-ERR_OMX( OMX_SetupTunnel(camera.component(), Camera::OPORT_PREVIEW, videorender.component(), VideoRenderer::IPORT),
+        if(VideoPreview)
+        ERR_OMX( OMX_SetupTunnel(camera.component(), Camera::OPORT_PREVIEW, videorender.component(), VideoRenderer::IPORT),
                 "tunnel camera.video -> renderer");
 		// switch components to idle state
 		{
 		    camera.switchState(OMX_StateIdle);
 
 		    encoder.switchState(OMX_StateIdle);
-		videorender.switchState(OMX_StateIdle);
+		    if(VideoPreview) videorender.switchState(OMX_StateIdle);
 			 
 		}
 
@@ -2431,8 +2481,11 @@ ERR_OMX( OMX_SetupTunnel(camera.component(), Camera::OPORT_PREVIEW, videorender.
 		{
 		    camera.enablePort(Camera::IPORT);
 		    camera.enablePort(Camera::OPORT_VIDEO);
-			camera.enablePort(Camera::OPORT_PREVIEW);
-		   videorender.enablePort(VideoRenderer::IPORT);
+            if(VideoPreview)
+            {
+    			camera.enablePort(Camera::OPORT_PREVIEW);
+		        videorender.enablePort(VideoRenderer::IPORT);
+            }
 		    
 		encoder.enablePort();    // all
 		}
@@ -2446,7 +2499,7 @@ ERR_OMX( OMX_SetupTunnel(camera.component(), Camera::OPORT_PREVIEW, videorender.
 
 		// switch state of the components prior to starting
 		{
-			videorender.switchState(OMX_StateExecuting);
+			if(VideoPreview) videorender.switchState(OMX_StateExecuting);
 		    camera.switchState(OMX_StateExecuting);
 		    encoder.switchState(OMX_StateExecuting);
 		}
@@ -2605,7 +2658,7 @@ else
 		// flush the buffers on each component
 		{
 		    camera.flushPort();
-		videorender.flushPort();
+         if(VideoPreview) videorender.flushPort();
 		    encoder.flushPort();
 		}
 		printf("Terminate camera..Disableport\n");
@@ -2613,8 +2666,11 @@ else
 		{
 		     
 		    camera.disablePort(Camera::OPORT_VIDEO);
-			camera.disablePort(Camera::OPORT_PREVIEW);
-		   videorender.disablePort(VideoRenderer::IPORT);
+			 if(VideoPreview) 
+            {
+                camera.disablePort(Camera::OPORT_PREVIEW);
+		        videorender.disablePort(VideoRenderer::IPORT);
+            }
 		    camera.disablePort(Camera::IPORT);
 			
 		    encoder.disablePort();
@@ -2632,14 +2688,14 @@ else
 		// transition all the components to idle states
 		{
 		    camera.switchState(OMX_StateIdle);
-		videorender.switchState(OMX_StateIdle);
+		 if(VideoPreview) videorender.switchState(OMX_StateIdle);
 		    encoder.switchState(OMX_StateIdle);
 		}
 
 		// transition all the components to loaded states
 		{
 		    camera.switchState(OMX_StateLoaded);
-		videorender.switchState(OMX_StateLoaded);
+		 if(VideoPreview) videorender.switchState(OMX_StateLoaded);
 		    encoder.switchState(OMX_StateLoaded);
 		}
 	}
@@ -2800,10 +2856,11 @@ public:
 			{
 				pgrabdisplay->SetOmxBuffer((unsigned char*)resizer.inBuffer().data());
 			}
-		if(Mode==Mode_VNCCLIENT)
-		{	
-			pvncclient->SetOmxBuffer((unsigned char*)resizer.inBuffer().data());
+		    if(Mode==Mode_VNCCLIENT)
+		    {	
+			    pvncclient->SetOmxBuffer((unsigned char*)resizer.inBuffer().data());
 			}
+
 		    printf("Allocsize= %d\n",resizer.inBuffer().allocSize());
 		    encoder.allocBuffers(false);//Only  Bufout
 		
@@ -3203,7 +3260,7 @@ Usage:\nrpi-avc2ts  -o OutputFile -b BitrateVideo -m BitrateMux -x VideoWidth  -
 -o            path to Transport File Output \n\
 -b            VideoBitrate in bit/s \n\
 -m            Multiplex Bitrate (should be around 1.4 VideoBitrate)\n\
--x            VideoWidth (should be 16 pixel aligned)\n\
+-x            VideoWidth (should be 16 pixel VideoPreviewed)\n\
 -y 	      VideoHeight (should be 16 pixel aligned)\n\
 -f            Framerate (25 for example)\n\
 -n 	      Multicast group (optionnal) example 230.0.0.1:10000\n\
@@ -3217,7 +3274,7 @@ Usage:\nrpi-avc2ts  -o OutputFile -b BitrateVideo -m BitrateMux -x VideoWidth  -
 -p 		Set the PidStart: Set PMT=PIDStart,Pidvideo=PidStart+1,PidAudio=PidStart+2\n\
 -s 		Set Servicename : Typically CALL\n\
 -h            help (print this help).\n\
-Example : ./rpi-avc2ts -o result.ts -b 1000000 -m 1400000 -x 640 -y 480 -f 25 -n 230.0.0.1:1000\n\
+Example : ./avc2ts -o result.ts -b 1000000 -m 1400000 -x 640 -y 480 -f 25 -n 230.0.0.1:1000\n\
 \n",\
 PROGRAM_VERSION);
 
@@ -3360,9 +3417,14 @@ int main(int argc, char **argv)
 CurrentVideoFormat.width=VideoWidth;
 CurrentVideoFormat.height=VideoHeight;
 CurrentVideoFormat.framerate=VideoFramerate;
-CurrentVideoFormat.ratio=VideoFromat::RATIO_16x9;
-CurrentVideoFormat.fov=false; // To check
- 
+CurrentVideoFormat.ratio=VideoFromat::RATIO_4x3;
+CurrentVideoFormat.fov=false;
+/*
+if((CurrentVideoFormat.width<1920)&&(CurrentVideoFormat.width<1080))    
+    CurrentVideoFormat.fov=false; // To check
+else
+     CurrentVideoFormat.fov=true; // To check
+ */
 bcm_host_init();
 	try
     {
@@ -3434,7 +3496,7 @@ else
             
         }
 
-        std::cerr << "high: " << highCount << " low: " << lowCount << std::endl;
+       
 
 #if 1
         // Restore signal handlers
