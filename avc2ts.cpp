@@ -692,7 +692,7 @@ namespace rpi_omx
         {
             Parameter<OMX_PARAM_PORTDEFINITIONTYPE> portDef;
             getPortDefinition(nPortIndex, portDef);
-
+            printf("Alloc Buffer with size %d\n",portDef->nBufferSize);
             ERR_OMX( OMX_AllocateBuffer(component_, buffer.pHeader(), nPortIndex, NULL, portDef->nBufferSize), "OMX_AllocateBuffer");
         }
 
@@ -921,7 +921,7 @@ namespace rpi_omx
             portDef->format.video.xFramerate   = videoFormat.framerate << 16;
             portDef->format.video.nStride      = align(portDef->format.video.nFrameWidth, portDef->nBufferAlignment);
             portDef->format.video.eColorFormat = OMX_COLOR_FormatYUV420PackedPlanar;
-
+            //printf("portDef->nBufferCountActual %d\n",portDef->nBufferCountActual);
             setPortDefinition(OPORT_VIDEO, portDef);
             if(VideoPreview)
             {
@@ -1114,6 +1114,8 @@ namespace rpi_omx
             portDef->format.video.xFramerate   = cameraPortDef->format.video.xFramerate;
             portDef->format.video.nStride      = cameraPortDef->format.video.nStride; //SHould be aligned ?
             portDef->format.video.nBitrate     = bitrate;
+           portDef->nBufferSize=256000; //By default 65536, but increased for high resolution with big I pictures
+          // printf("portDef->nBufferCountActual %d\n",portDef->nBufferCountActual);
 	   //printf("FPS from camera=%x\n",cameraPortDef->format.video.xFramerate);	
             if (framerate)
                 portDef->format.video.xFramerate = framerate<<16;
@@ -1154,6 +1156,7 @@ namespace rpi_omx
 		portDef->format.video.nFrameWidth  = Videoformat.width;
 		portDef->format.video.nFrameHeight = Videoformat.height;
 		portDef->format.video.xFramerate= framerate<<16;
+        portDef->nBufferSize=256000; //By default 65536, but increased for high resolution with big I pictures
 		//printf("FPS from output=%x\n",portDef->format.video.xFramerate);
         printf("Aligned = %d Stride= %d\n",portDef->nBufferAlignment,portDef->format.video.nStride);
 	        setPortDefinition(OPORT, portDef);
@@ -1476,7 +1479,31 @@ So the advice was for MMAL_VIDEO_INTRA_REFRESH_CYCLIC_MROWS and cir_mbs set prob
 		ERR_OMX( OMX_GetParameter(component_, OMX_IndexConfigBrcmPortStats, &VideoStat)," Get VideoStat");
 		struct timespec t;
          clock_gettime(CLOCK_REALTIME, &t);
-		printf("VideoStat : %s ByteCount %d Buffer %d - Frame %d = %d Skip %d Discard %d Max Delta%d:%d TIME %li AverageBitrate=%d\n",/*VideoStat->nByteCount.nLowPart*8*25/VideoStat->nFrameCount,*/debug,VideoStat->nByteCount.nLowPart,VideoStat->nBufferCount,VideoStat->nFrameCount,VideoStat->nBufferCount-VideoStat->nFrameCount*3,VideoStat->nFrameSkips,VideoStat->nDiscards,VideoStat->nMaxTimeDelta.nHighPart,VideoStat->nMaxTimeDelta.nLowPart,( t.tv_sec -tbefore.tv_sec  )*1000ul + ( t.tv_nsec - tbefore.tv_nsec)/1000000,(VideoStat->nByteCount.nLowPart*8L)/(((t.tv_sec-tinitial.tv_sec)>0)?(t.tv_sec-tinitial.tv_sec):1));
+        
+        static int NbCodecConfig=0;
+       if(Flags&OMX_BUFFERFLAG_CODECCONFIG) NbCodecConfig++;
+
+        Parameter<OMX_PARAM_U32TYPE> MemStat;
+        ERR_OMX( OMX_GetParameter(component_, OMX_IndexConfigBrcmPoolMemAllocSize, &MemStat)," Get VideoStat");
+        printf("VideoStat -");
+        printf("%s",debug);
+        printf("PoolMem %d ",MemStat);
+        //printf("nImageCount %d ",VideoStat->nImageCount);
+       printf("nBufferCount %d ",VideoStat->nBufferCount);     
+        printf("nFrameCount %d ",VideoStat->nFrameCount);
+       printf("Diff %d ",VideoStat->nBufferCount-VideoStat->nFrameCount*3+NbCodecConfig);
+
+          if(VideoStat->nFrameSkips!=0) printf("nFrameSkips %d ",VideoStat->nFrameSkips);
+          if(VideoStat->nDiscards!=0) printf("nDiscards %d ",VideoStat->nDiscards);
+        //        printf("nEOS %d ",VideoStat->nEOS);
+    //printf("nMaxFrameSize %d ",VideoStat->nMaxFrameSize);
+      //printf("nByteCount %d:%d ",VideoStat->nByteCount.nHighPart,VideoStat->nByteCount.nLowPart);
+     //printf("nMaxTimeDelta %d:%d ",VideoStat->nMaxTimeDelta.nHighPart,VideoStat->nMaxTimeDelta.nLowPart);
+    //printf("nCorruptMBs %d ",VideoStat->nCorruptMBs);
+    printf("Time %d ",( t.tv_sec -tbefore.tv_sec  )*1000ul + ( t.tv_nsec - tbefore.tv_nsec)/1000000);
+   //printf("Bitrate %d",(VideoStat->nByteCount.nLowPart*8L)/(((t.tv_sec-tinitial.tv_sec)>0)?(t.tv_sec-tinitial.tv_sec):1));
+printf("\n");
+	/*	printf("VideoStat :Mem=%d ByteCount %d Buffer %d - Frame %d = %d Skip %d Discard %d Max Delta%d:%d TIME %li AverageBitrate=%d\n",MemStat,VideoStat->nByteCount.nLowPart,VideoStat->nBufferCount,VideoStat->nFrameCount,VideoStat->nBufferCount-VideoStat->nFrameCount*3,VideoStat->nFrameSkips,VideoStat->nDiscards,VideoStat->nMaxTimeDelta.nHighPart,VideoStat->nMaxTimeDelta.nLowPart,( t.tv_sec -tbefore.tv_sec  )*1000ul + ( t.tv_nsec - tbefore.tv_nsec)/1000000,(VideoStat->nByteCount.nLowPart*8L)/(((t.tv_sec-tinitial.tv_sec)>0)?(t.tv_sec-tinitial.tv_sec):1));*/
 	tbefore=t;
 	Count++;
 	}
@@ -2444,7 +2471,7 @@ public:
 			if(RowBySlice)
 				encoder.setMultiSlice(RowBySlice);
 			else
-				encoder.setMinizeFragmentation();
+				encoder.setMinizeFragmentation(); // Minimize frag seems to block at high resolution : to inspect
 		    //encoder.setEED();
 
 	/*OMX_VIDEO_AVCProfileBaseline = 0x01,   //< Baseline profile 
@@ -2514,16 +2541,17 @@ public:
 	void Run(bool want_quit)
 	{
 		Buffer& encBuffer = encoder.outBuffer();
+       
 		if(FirstTime) 
 		{
 			clock_gettime(CLOCK_REALTIME, &InitTime);
 			FirstTime=false;
 			encoder.callFillThisBuffer();
 		}
-		if (!want_quit&&encBuffer.filled())
+		if (!want_quit&&(encBuffer.filled()))
 		 {
-			       //encoder.getEncoderStat(encBuffer.flags());
-	      			
+			      // encoder.getEncoderStat(encBuffer.flags());
+	      		
 				//encoder.setDynamicBitrate(EncVideoBitrate);
 				//encoder.setQP(20,20);
 				//printf("Len = %"\n",encBufferLow
@@ -2545,10 +2573,11 @@ public:
 					}
 					encBuffer.setFilled(false);
 					encoder.callFillThisBuffer();
+                    //GetItNow=true;
 					return;
 				}
 						
-				unsigned toWrite = (encBuffer.dataSize()) ;
+				OMX_U32 toWrite = (encBuffer.dataSize()) ;
 				
 		 		
 				if (toWrite)
@@ -2573,10 +2602,10 @@ else
 {
 	gettime_now.tv_nsec=gettime_now.tv_nsec-(int64_t)InitTime.tv_nsec;
 }
-			tsencoder.AddFrame(encBuffer.data(),encBuffer.dataSize(),OmxFlags,key_frame,DelayPTS/*,&gettime_now*/);
+			//tsencoder.AddFrame(encBuffer.data(),encBuffer.dataSize(),OmxFlags,key_frame,DelayPTS/*,&gettime_now*/);
 
 
-					//tsencoder.AddFrame(encBuffer.data(),encBuffer.dataSize(),OmxFlags,key_frame,DelayPTS);
+					tsencoder.AddFrame(encBuffer.data(),encBuffer.dataSize(),OmxFlags,key_frame,DelayPTS);
 			
 				
 		
@@ -2588,8 +2617,17 @@ else
 				}
 				//if(key_frame%100==0) encoder.requestIFrame();
 				// Buffer flushed, request a new buffer to be filled by the encoder component
-				encBuffer.setFilled(false);
+                /*if(encBuffer.dataSize()!=65536)
+                	encBuffer.setFilled(false);
+                else
+                    encBuffer.setFilled(true); // Force immediate fill*/
+                encBuffer.setFilled(false);
 				encoder.callFillThisBuffer();
+                if(encBuffer.dataSize()==65536)
+                {
+                   
+                    return; //We surely have an other buffer : get it immediately
+                }
 		  }
 			//===== test Audio =====
 #define WITH_AUDIO 1
@@ -2634,7 +2672,7 @@ else
 				}
 				//==========
 #endif
-		usleep(1000);	
+		 usleep(1000);	
 			   
 	}
 
@@ -3028,7 +3066,7 @@ void Run(bool want_quit)
 					return;
 				}
 						
-				unsigned toWrite = (encBuffer.dataSize()) ;
+				unsigned int toWrite = (encBuffer.dataSize()) ;
 				
 		 		
 				if (toWrite)
@@ -3417,7 +3455,7 @@ int main(int argc, char **argv)
 CurrentVideoFormat.width=VideoWidth;
 CurrentVideoFormat.height=VideoHeight;
 CurrentVideoFormat.framerate=VideoFramerate;
-CurrentVideoFormat.ratio=VideoFromat::RATIO_4x3;
+CurrentVideoFormat.ratio=VideoFromat::RATIO_16x9;
 CurrentVideoFormat.fov=false;
 /*
 if((CurrentVideoFormat.width<1920)&&(CurrentVideoFormat.width<1080))    
