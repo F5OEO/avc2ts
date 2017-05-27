@@ -692,7 +692,7 @@ namespace rpi_omx
         {
             Parameter<OMX_PARAM_PORTDEFINITIONTYPE> portDef;
             getPortDefinition(nPortIndex, portDef);
-            printf("Alloc Buffer with size %d\n",portDef->nBufferSize);
+            //printf("Alloc Buffer with size %d\n",portDef->nBufferSize);
             ERR_OMX( OMX_AllocateBuffer(component_, buffer.pHeader(), nPortIndex, NULL, portDef->nBufferSize), "OMX_AllocateBuffer");
         }
 
@@ -896,7 +896,7 @@ namespace rpi_omx
                 {
                     sensor->nModeIndex=i;
                      ERR_OMX( OMX_GetParameter(component_, OMX_IndexConfigCameraSensorModes, &sensor)," Get sensor mode");
-                    printf("Mode %d : %d x %d Padding %d-%d Fps %d-%d\n",sensor->nModeIndex,sensor->nWidth,sensor->nHeight,sensor->nPaddingRight,sensor->nPaddingDown,sensor->nFrameRateMin,sensor->nFrameRateMax);  
+                    //printf("Mode %d : %d x %d Padding %d-%d Fps %d-%d\n",sensor->nModeIndex,sensor->nWidth,sensor->nHeight,sensor->nPaddingRight,sensor->nPaddingDown,sensor->nFrameRateMin,sensor->nFrameRateMax);  
                 }
             }
             else
@@ -1039,6 +1039,15 @@ namespace rpi_omx
             ERR_OMX( OMX_SetConfig(component_, OMX_IndexConfigCommonMirror, &mirror), "set cammera mirror");
         }
 
+        void setSmartShakeReduction(OMX_U32 nPortIndex = OMX_ALL,OMX_BOOL bReduc = OMX_TRUE)
+        {
+            Parameter<OMX_CONFIG_BOOLEANTYPE> Reduction;
+            Reduction->bEnabled=bReduc;
+            ERR_OMX( OMX_SetConfig(component_, OMX_IndexConfigSmartShakeReductionEnable, &Reduction), "set Shake reduction");
+            
+        }
+
+
         void setImageDefaults()
         {
             setSharpness();
@@ -1049,6 +1058,7 @@ namespace rpi_omx
             setFrameStabilisation();
             setWhiteBalanceControl();
             setImageFilter();
+            setSmartShakeReduction();
             //setMirror(OPORT_VIDEO,OMX_MirrorVertical);
         }
 
@@ -1985,6 +1995,7 @@ class TSEncaspulator
 	//struct timespec *TimeFirstFrame;
 	 int        m_sock;
 	 struct     sockaddr_in m_client;
+    bool IsCodec=false;
 	
 	public:
 	 TSEncaspulator()
@@ -2083,50 +2094,46 @@ class TSEncaspulator
 		static int TotalFrameSize=0;
 		int ret;
 		int len;	
-		/*if((FirstFrame==true)&&(Time!=NULL))
-		{
-			TimeFirstFrame.tv_sec=Time->tv_sec;
-			TimeFirstFrame.tv_nsec=Time->tv_nsec;
-			FirstFrame=false;	
-			
-		}*/
-		if(OmxFlags&OMX_BUFFERFLAG_CODECCONFIG)
-		{
-			if(InternalBufferSize+size>MAX_SIZE_PICTURE) printf("MaxPictureSize Overflow\n");
-			memcpy(InternalBuffer,buffer,size);
-			InternalBufferSize+=size;
-			/*memcpy(PictureHeader,buffer,size);
-			PictureHeaderSize=size;
-			printf("Got Picture HEader with Size %d\n",PictureHeaderSize);
-			*/
-		}
-		else
 		
-		if(OmxFlags&OMX_BUFFERFLAG_ENDOFNAL)
+        
+        if(InternalBufferSize+size>MAX_SIZE_PICTURE) printf("MaxPictureSize Overflow\n");
+		memcpy(InternalBuffer+InternalBufferSize,buffer,size);
+		InternalBufferSize+=size;
+        
+        if(OmxFlags&OMX_BUFFERFLAG_CODECCONFIG)
+        {
+            IsCodec=true;
+            
+            /*printf("CODEC: ");
+            for(int i=0;i<size;i++)
+            {
+                printf("%x ",buffer[i]);
+            }
+            printf("\n");*/
+             return;
+        }
+        
+		if(OmxFlags&OMX_BUFFERFLAG_ENDOFFRAME)
 		{
 			
 			
-			if((OmxFlags&OMX_BUFFERFLAG_SYNCFRAME)||(InternalBufferSize>0))
+			if((OmxFlags&OMX_BUFFERFLAG_SYNCFRAME))
+            {
 				tsframe.frame_type=LIBMPEGTS_CODING_TYPE_SLICE_IDR|LIBMPEGTS_CODING_TYPE_SLICE_I;
+                
+            }
 			else
+            {
+                
 				tsframe.frame_type=LIBMPEGTS_CODING_TYPE_SLICE_P;
-
-			/*if(InternalBufferSize==0)
-			{	
-				tsframe.data=buffer;
-				tsframe.size=size;
-			}
-	       		else*/
-			{	if(InternalBufferSize>MAX_SIZE_PICTURE) printf("MaxPictureSize Overflow\n");
-				memcpy(InternalBuffer+InternalBufferSize+PictureHeaderSize,buffer,size);
-				InternalBufferSize+=size;
-				tsframe.data=InternalBuffer+PictureHeaderSize;
-				tsframe.size=InternalBufferSize;
-				
-				
-			}
+            }
 			
-			if(!(OmxFlags&OMX_BUFFERFLAG_ENDOFFRAME)) return;
+			tsframe.data=InternalBuffer+PictureHeaderSize;
+			tsframe.size=InternalBufferSize;
+				
+				
+			
+			//if(!(OmxFlags&OMX_BUFFERFLAG_ENDOFFRAME)) return;
 
 			/*if(OmxFlags&OMX_BUFFERFLAG_SYNCFRAME)
 			{
@@ -2140,6 +2147,7 @@ class TSEncaspulator
 				}
 			}*/	
 			InternalBufferSize=0; //Purge 
+            IsCodec=false;
 			tsframe.pid=VideoPid;
 			int MaxVideoBitrate=tsmain.muxrate-10000-8000*1.5*IsAudioPresent; //MINUS SI/PSI
 			TotalFrameSize=tsframe.size;
@@ -2165,7 +2173,7 @@ class TSEncaspulator
 				}
 				
 					tsframe.cpb_initial_arrival_time =((key_frame-1)*FrameDuration)*27000LL  ;
-	                	tsframe.cpb_final_arrival_time = ((key_frame)*FrameDuration)*27000LL; 	
+	                tsframe.cpb_final_arrival_time = ((key_frame)*FrameDuration)*27000LL; 	
 				
 // OK
 /*				vdts=((key_frame)*FrameDuration)*90LL ; 
@@ -2472,6 +2480,7 @@ public:
 				encoder.setMultiSlice(RowBySlice);
 			else
 				encoder.setMinizeFragmentation(); // Minimize frag seems to block at high resolution : to inspect
+            
 		    //encoder.setEED();
 
 	/*OMX_VIDEO_AVCProfileBaseline = 0x01,   //< Baseline profile 
@@ -2550,7 +2559,7 @@ public:
 		}
 		if (!want_quit&&(encBuffer.filled()))
 		 {
-			      // encoder.getEncoderStat(encBuffer.flags());
+			       //encoder.getEncoderStat(encBuffer.flags());
 	      		
 				//encoder.setDynamicBitrate(EncVideoBitrate);
 				//encoder.setQP(20,20);
