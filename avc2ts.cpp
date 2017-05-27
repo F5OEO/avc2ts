@@ -1126,6 +1126,7 @@ namespace rpi_omx
             portDef->format.video.nBitrate     = bitrate;
            portDef->nBufferSize=256000; //By default 65536, but increased for high resolution with big I pictures
           // printf("portDef->nBufferCountActual %d\n",portDef->nBufferCountActual);
+            printf("Video encoding format=%d x %d\n",portDef->format.video.nFrameWidth,portDef->format.video.nFrameHeight);
 	   //printf("FPS from camera=%x\n",cameraPortDef->format.video.xFramerate);	
             if (framerate)
                 portDef->format.video.xFramerate = framerate<<16;
@@ -2564,25 +2565,55 @@ public:
 				//encoder.setDynamicBitrate(EncVideoBitrate);
 				//encoder.setQP(20,20);
 				//printf("Len = %"\n",encBufferLow
+               
 				if(encBuffer.flags() & OMX_BUFFERFLAG_CODECSIDEINFO)
 				{
-					printf("CODEC CONFIG>\n");
-					int LenVector=encBuffer.dataSize();
-					 
-					for(int j=0;j<CurrentVideoFormat.height/16;j++)
+                     int RealWidthMB=((CurrentVideoFormat.width>>5)<<5)>>4;
+                     int RealHeightMB=((CurrentVideoFormat.height>>4)<<4)>>4;
+                    #define couleur(param) printf("\033[%dm",param)
+					printf("\033[H\033[2J");
+    				int LenVector=encBuffer.dataSize();
+					//printf("X %d Y %d Keyframe %d LenVector %d\n",RealWidthMB,RealHeightMB,key_frame,LenVector);
+					for(int j=0;j<RealHeightMB;j++)
 					{
-						for(int i=0;i<CurrentVideoFormat.width/16;i++)
+						for(int i=0;i<RealWidthMB;i++)
 						{
-							int Motionx=encBuffer.data()[(CurrentVideoFormat.width/16*j+i)*4];
-							int Motiony=encBuffer.data()[(CurrentVideoFormat.width/16*j+i)*4+1];
-							int MotionAmplitude=sqrt((double)((Motionx * Motionx) + (Motiony * Motiony)));
-							printf("%d ",MotionAmplitude);
+							int Motionx=encBuffer.data()[((RealWidthMB+1)*j+i)*4];
+							int Motiony=encBuffer.data()[((RealWidthMB+1)*j+i)*4+1];
+							int MotionAmplitude=sqrt((double)((Motionx * Motionx) + (Motiony * Motiony)))/sqrt(2);
+                                                      
+                            if(MotionAmplitude>0)
+                            {
+                                    int intensity=(7*MotionAmplitude)/256+31;
+                                    couleur(intensity);
+                                    printf("*");
+                            }
+                            else
+                            {
+                                printf(" ");
+                            }
+                            
+						}
+                        couleur(37);
+                        for(int i=0;i<RealWidthMB;i++)
+						{
+							
+                            unsigned int SAD=((encBuffer.data()[((RealWidthMB+1)*j+i)*4+2])<<8)+(encBuffer.data()[((RealWidthMB+1)*j+i)*4+3]);
+                           
+                             if(SAD>16000)
+                            {
+                                    
+                                    printf("*");
+                            }
+                            else
+                            {
+                                printf(" ");
+                            }
 						}
 						printf("\n");
 					}
 					encBuffer.setFilled(false);
 					encoder.callFillThisBuffer();
-                    //GetItNow=true;
 					return;
 				}
 						
@@ -3056,17 +3087,47 @@ void Run(bool want_quit)
 				}*/
 				if(encBuffer.flags() & OMX_BUFFERFLAG_CODECSIDEINFO)
 				{
-					printf("CODEC CONFIG>\n");
-					int LenVector=encBuffer.dataSize();
-					 
-					for(int j=0;j<CurrentVideoFormat.height/16;j++)
+                     int RealWidthMB=((CurrentVideoFormat.width>>5)<<5)>>4;
+                     int RealHeightMB=((CurrentVideoFormat.height>>4)<<4)>>4;
+                    #define couleur(param) printf("\033[%dm",param)
+					printf("\033[H\033[2J");
+    				int LenVector=encBuffer.dataSize();
+					//printf("X %d Y %d Keyframe %d LenVector %d\n",RealWidthMB,RealHeightMB,key_frame,LenVector);
+					for(int j=0;j<RealHeightMB;j++)
 					{
-						for(int i=0;i<CurrentVideoFormat.width/16;i++)
+						for(int i=0;i<RealWidthMB;i++)
 						{
-							int Motionx=encBuffer.data()[(CurrentVideoFormat.width/16*j+i)*4];
-							int Motiony=encBuffer.data()[(CurrentVideoFormat.width/16*j+i)*4+1];
-							int MotionAmplitude=sqrt((double)((Motionx * Motionx) + (Motiony * Motiony)));
-							printf("%d ",MotionAmplitude);
+							int Motionx=encBuffer.data()[((RealWidthMB+1)*j+i)*4];
+							int Motiony=encBuffer.data()[((RealWidthMB+1)*j+i)*4+1];
+							int MotionAmplitude=sqrt((double)((Motionx * Motionx) + (Motiony * Motiony)))/sqrt(2);
+                                                      
+                            if(MotionAmplitude>0)
+                            {
+                                    int intensity=(7*MotionAmplitude)/256+31;
+                                    couleur(intensity);
+                                    printf("*");
+                            }
+                            else
+                            {
+                                printf(" ");
+                            }
+                            
+						}
+                        couleur(37);
+                        for(int i=0;i<RealWidthMB;i++)
+						{
+							
+                            unsigned int SAD=((encBuffer.data()[((RealWidthMB+1)*j+i)*4+2])<<8)+(encBuffer.data()[((RealWidthMB+1)*j+i)*4+3]);
+                           
+                             if(SAD>16000)
+                            {
+                                    
+                                    printf("*");
+                            }
+                            else
+                            {
+                                printf(" ");
+                            }
 						}
 						printf("\n");
 					}
@@ -3348,6 +3409,7 @@ int main(int argc, char **argv)
 	char *ExtraArg=NULL;
 	char *sdt="F5OEO";
 	int pidpmt=255,pidvideo=256,pidaudio=257;
+    
 	#define CAMERA 0
 	#define PATTERN 1
 	#define USB_CAMERA 2
@@ -3484,7 +3546,7 @@ bcm_host_init();
 if(TypeInput==0)
 {
 	cameratots=new CameraTots; 
-	cameratots->Init(CurrentVideoFormat,OutputFileName,NetworkOutput,VideoBitrate,MuxBitrate,DelayPTS,pidpmt,sdt,VideoFramerate,IDRPeriod,RowBySlice,false);
+	cameratots->Init(CurrentVideoFormat,OutputFileName,NetworkOutput,VideoBitrate,MuxBitrate,DelayPTS,pidpmt,sdt,VideoFramerate,IDRPeriod,RowBySlice,EnableMotionVectors);
 }
 else
 {
@@ -3500,7 +3562,7 @@ else
 	
 	}
 	picturetots = new PictureTots;
-	picturetots->Init(CurrentVideoFormat,OutputFileName,NetworkOutput,VideoBitrate,MuxBitrate,DelayPTS,pidpmt,sdt,VideoFramerate,IDRPeriod,RowBySlice,false,PictureMode,ExtraArg);
+	picturetots->Init(CurrentVideoFormat,OutputFileName,NetworkOutput,VideoBitrate,MuxBitrate,DelayPTS,pidpmt,sdt,VideoFramerate,IDRPeriod,RowBySlice,EnableMotionVectors,PictureMode,ExtraArg);
 }	
 #if 1
         signal(SIGINT,  signal_handler);
