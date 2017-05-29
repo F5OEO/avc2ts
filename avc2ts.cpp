@@ -1207,6 +1207,10 @@ namespace rpi_omx
             ERR_OMX( OMX_SetParameter(component_, OMX_IndexParamVideoBitrate, &brate), "set bitrate");
         }
 
+    void setLevelExtension()
+    {
+    }
+
 	void setIDR(OMX_U32  idr_period/*, OMX_U32  nPFrames*/)
 	{
 
@@ -1997,6 +2001,7 @@ class TSEncaspulator
 	 int        m_sock;
 	 struct     sockaddr_in m_client;
     bool IsCodec=false;
+    int64_t LastPCR=0;
 	
 	public:
 	 TSEncaspulator()
@@ -2091,7 +2096,7 @@ class TSEncaspulator
 	{
 		 //unsigned char buffer[100];
 		ts_frame_t tsframe;
-		static float TimeToTransmitFrameUs=0;
+		//static float TimeToTransmitFrameUs=0;
 		static int TotalFrameSize=0;
 		int ret;
 		int len;	
@@ -2150,9 +2155,9 @@ class TSEncaspulator
 			InternalBufferSize=0; //Purge 
             IsCodec=false;
 			tsframe.pid=VideoPid;
-			int MaxVideoBitrate=tsmain.muxrate-10000-8000*1.5*IsAudioPresent; //MINUS SI/PSI
+			int MaxVideoBitrate=tsmain.muxrate/*-10000-8000*1.5*IsAudioPresent*/; //MINUS SI/PSI
 			TotalFrameSize=tsframe.size;
-			TimeToTransmitFrameUs= (TotalFrameSize*8.0*1000*1.1/(float)MaxVideoBitrate); //in ms
+			float TimeToTransmitFrameUs= ((float)TotalFrameSize*8.0*1e3*1.2/(float)MaxVideoBitrate); //in ms
 			
 			//if(TimeToTransmitFrameUs>FrameDuration)
 				//printf("Frame=%lld Time to Tx %f a Frame of %d  MaxVideoBitrate=%d\n",key_frame,TimeToTransmitFrameUs,TotalFrameSize,MaxVideoBitrate);
@@ -2160,33 +2165,39 @@ class TSEncaspulator
 			//if(OmxFlags&OMX_BUFFERFLAG_SYNCFRAME)
 			if(Time==NULL)//Frame base calculation
 			{
-				//printf("IDR Image=%d TotalSize=%d Temps=%d\n",tsframe.size,TotalFrameSize,TimeToTransmitFrameUs);
-				
+				//printf("MaxVideo=%d TotalSize=%d Temps=%f\n",MaxVideoBitrate,TotalFrameSize,TimeToTransmitFrameUs);
+				printf("TimeToTransmitFrameUs = %f (%d bytes picture) : DelayPTS = %d\n",TimeToTransmitFrameUs,TotalFrameSize,DelayPTS);
 				if(TimeToTransmitFrameUs<=DelayPTS)
 				{
+                    vdts=((key_frame)*FrameDuration+(DelayPTS-TimeToTransmitFrameUs))*90LL;//vpts-(5*90LL); //5ms between dts and pts
 					vpts=((key_frame)*FrameDuration+DelayPTS)*90LL;
-					vdts=vpts-(5*90LL); //5ms between dts and pts
+					
+
 				}
 				else
 				{
-						vpts=((key_frame)*FrameDuration+TimeToTransmitFrameUs)*90LL;
-						vdts=vpts-(5*90LL);
+                        printf("YOOOOP");
+                        vdts=((key_frame)*FrameDuration)*90LL;
+						vpts=((key_frame)*FrameDuration)*90LL;
+						
 				}
+                    // Simple algo which works !
+                    //tsframe.cpb_initial_arrival_time =((key_frame-1)*FrameDuration)*27000LL  ;
+	                //tsframe.cpb_final_arrival_time = ((key_frame)*FrameDuration)*27000LL; 	
+				      
+                tsframe.cpb_initial_arrival_time =((key_frame)*FrameDuration-TimeToTransmitFrameUs)*90LL*300L ;
+                 tsframe.cpb_final_arrival_time =((key_frame)*FrameDuration-TimeToTransmitFrameUs)*90LL*300L ;
+	           // tsframe.cpb_final_arrival_time = ((key_frame)*FrameDuration+TimeToTransmitFrameUs)*90LL*300L; 
+
+
+                    // More complex time algo      		
+		            //	tsframe.cpb_initial_arrival_time =(LastPCR+FrameDuration+5)*27000LL;//((key_frame)*FrameDuration-TimeToTransmitFrameUs)*90*300L ;
+	                //	tsframe.cpb_final_arrival_time = ((key_frame)*FrameDuration)*90*300L ;
+			
+					//tsframe.cpb_initial_arrival_time =(LastPCR+TimeToTransmitFrameUs)*27000L ;
+	                //tsframe.cpb_final_arrival_time = (LastPCR+TimeToTransmitFrameUs)*27000L; 	
 				
-					tsframe.cpb_initial_arrival_time =((key_frame-1)*FrameDuration)*27000LL  ;
-	                tsframe.cpb_final_arrival_time = ((key_frame)*FrameDuration)*27000LL; 	
-				
-// OK
-/*				vdts=((key_frame)*FrameDuration)*90LL ; 
-				vpts=((key_frame)*FrameDuration+DelayPTS)*90L; 	
-				
-				tsframe.cpb_initial_arrival_time = (key_frame*FrameDuration-TimeToTransmitFrameUs)*90LL*300LL  ;
-	                	tsframe.cpb_final_arrival_time = (key_frame*FrameDuration-10)*90LL*300LL ;
-*/
-// FIN OK 
-				//tsframe.cpb_initial_arrival_time = vdts*300L - TimeToTransmitFrameUs*2.7- DelayPTS*90*300L ;
-	                	//tsframe.cpb_final_arrival_time = vdts*300L - TimeToTransmitFrameUs*2.7- DelayPTS*90*300L ;
-				
+
 
 			}
 			else
@@ -2208,14 +2219,23 @@ class TSEncaspulator
 	                tsframe.priority = key_frame;
 			tsframe.ref_pic_idc = 0; //Fixme (frame->pict_type == AV_PICTURE_TYPE_B) ? 1 : 0
 			tsframe.write_pulldown_info=0;
-			if(key_frame>=0) //Skip first frame
+
+			if(key_frame>=4) //Skip first frame(s)
 			{				
 				ret = ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
-					//if(len)
-				//printf("First PCR=%lld, End=%lld\n",pcr_list[0]/27000LL-10000,pcr_list[(len/188)-1]/27000LL-10000);
+					if(len)
+                    {
+                        
+        				printf(" Init %lld Arrival %lld dts %lld pts %lld First PCR=%lld, End=%lld\n",tsframe.cpb_initial_arrival_time/27000LL,tsframe.cpb_final_arrival_time/27000LL,vdts/90L,vpts/90L,pcr_list[0]/27000LL-10000,pcr_list[(len/188)-1]/27000LL-10000);
+                        LastPCR=pcr_list[(len/188)-1]/27000LL-10000; //In ms
+                    }
+                    else
+                        printf("Skip Init %lld Arrival %lld dts %lld pts %lld \n",tsframe.cpb_initial_arrival_time/27000LL,tsframe.cpb_final_arrival_time/27000LL,vdts/90L,vpts/90L);
 			}	
 			else 
 				len=0;
+
+
 			if(len>0)
 			{
 				//while(len>0)
@@ -2497,7 +2517,7 @@ public:
 		   tsencoder.ConstructTsTree(VideoBitrate,TsBitrate,PMTPid,sdt,fps,1); 	
 		 EncVideoBitrate=VideoBitrate;
 	
-		    //encoder.setPeakRate(VIDEO_BITRATE_LOW/1000);
+		    //encoder.setPeakRate(VideoBitrate*4);
 		    //encoder.setMaxFrameLimits(10000*8);
 		}
         ERR_OMX( OMX_SetupTunnel(camera.component(), Camera::OPORT_VIDEO, encoder.component(), Encoder::IPORT),
