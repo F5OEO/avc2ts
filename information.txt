@@ -1,0 +1,5 @@
+For debugging :
+vcgencmd set_logging level=204
+and 
+sudo vcdbg log msg
+sudo vcdbg log assert
