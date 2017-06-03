@@ -1207,8 +1207,25 @@ namespace rpi_omx
             ERR_OMX( OMX_SetParameter(component_, OMX_IndexParamVideoBitrate, &brate), "set bitrate");
         }
 
-    void setLevelExtension()
+    void setLevelExtension(int BitrateMaxKbps)
     {
+        /*
+        nCustomMaxMBPS
+        Specifies maximum macro-blocks per second
+        nCustomMaxFS
+        Specifies maximum frame size (macro-blocks per frame)
+        nCustomMaxBRandCPB
+        Specifies maximum bitrate in units of 1000 bits/s and Codec Picture Buffer (CPB derived from bitrate)
+        */
+        Parameter<OMX_VIDEO_CONFIG_LEVEL_EXTEND> ProfileExtended;
+           ProfileExtended->nPortIndex=OPORT;
+           ProfileExtended->nCustomMaxMBPS=522240; //4.2
+           ProfileExtended->nCustomMaxFS=8704;
+           ProfileExtended->nCustomMaxBRandCPB=BitrateMaxKbps;
+           ERR_OMX( OMX_SetParameter(component_, OMX_IndexConfigEncLevelExtension, &ProfileExtended)," Get extended");
+          //  printf("Profile extended : nCustomMaxMBPS %d nCustomMaxFS %d nCustomMaxBRandCPB %d\n",ProfileExtended->nCustomMaxMBPS,ProfileExtended->nCustomMaxFS,ProfileExtended->nCustomMaxBRandCPB);
+ 
+
     }
 
 	void setIDR(OMX_U32  idr_period/*, OMX_U32  nPFrames*/)
@@ -1336,17 +1353,17 @@ LOW_LATENCY mode is not a mode intended for general use. There was a specific us
 		ERR_OMX( OMX_SetParameter(component_, OMX_IndexParamBrcmVideoFrameLimitBits, &MaxFrameLimit), "MaxFrameLimit");
 	}
 	
-	void setPeakRate(int PeakRateinKbit)
+	void setPeakRate(int PeakRateIn)
 	{
 		Parameter<OMX_PARAM_U32TYPE> PeakRate;
 		PeakRate->nPortIndex= OPORT;
   		
-		ERR_OMX( OMX_GetParameter(component_, OMX_IndexParamBrcmVideoPeakRate, &PeakRate)," GetPeakRate");
-		printf("\nPEAK GET = %d\n",PeakRate->nU32); 
-		PeakRate->nU32=PeakRateinKbit;
-		ERR_OMX( OMX_SetParameter(component_, OMX_IndexParamBrcmVideoPeakRate, &PeakRate), "PeakRateinKbit");
-		ERR_OMX( OMX_GetParameter(component_, OMX_IndexParamBrcmVideoPeakRate, &PeakRate)," GetPeakRate");
-		printf("\nPEAK GET 2 = %d\n",PeakRate->nU32); 
+		//ERR_OMX( OMX_GetParameter(component_, OMX_IndexParamBrcmVideoPeakRate, &PeakRate)," GetPeakRate");
+		//printf("\nPEAK GET = %d\n",PeakRate->nU32); 
+		PeakRate->nU32=PeakRateIn;
+		ERR_OMX( OMX_SetParameter(component_, OMX_IndexParamBrcmVideoPeakRate, &PeakRate), "PeakRate");
+		
+		
            // Peak video bitrate in bits per second. Must be larger or equal to the average video bitrate. It is ignored if the  video bitrate mode is set to constant bitrate.
                     
 	}
@@ -1359,6 +1376,66 @@ LOW_LATENCY mode is not a mode intended for general use. There was a specific us
 		ERR_OMX( OMX_SetParameter(component_, OMX_IndexConfigVideoBitrate, &DynamicBitrate), "DynamicVideoBitRate");
 
 	}
+
+    void setAdvanceddAVC()
+    {
+        Parameter<OMX_VIDEO_PARAM_AVCTYPE> AvcConfig;
+           
+    AvcConfig->nPortIndex=OPORT; 
+
+      ERR_OMX( OMX_GetParameter(component_, OMX_IndexParamVideoAvc, &AvcConfig), "AVCCONFIG");
+        printf("AvcConfig->nSliceHeaderSpacing %d\n",AvcConfig->nSliceHeaderSpacing);  
+    printf("AvcConfig->nPFrames %d\n",AvcConfig->nSliceHeaderSpacing);     
+        printf("AvcConfig->nBFrames %d\n",AvcConfig->nBFrames);     
+        printf("AvcConfig->bUseHadamard %d\n",AvcConfig->bUseHadamard);
+        printf("AvcConfig->nRefFrames %d\n",AvcConfig->nRefFrames);  
+	    printf("AvcConfig->nRefIdx10ActiveMinus1 %d\n",AvcConfig->nRefIdx10ActiveMinus1);
+	    printf("AvcConfig->nRefIdx11ActiveMinus1 %d\n",AvcConfig->nRefIdx11ActiveMinus1);
+        printf("AvcConfig->bEnableUEP %d\n",AvcConfig->bEnableUEP);  
+        printf("AvcConfig->bEnableFMO %d\n",AvcConfig->bEnableFMO);  
+        printf("AvcConfig->bEnableASO %d\n",AvcConfig->bEnableASO);  
+        printf("AvcConfig->bEnableRS %d\n",AvcConfig->bEnableRS);   
+    //OMX_VIDEO_AVCPROFILETYPE eProfile;
+	//OMX_VIDEO_AVCLEVELTYPE eLevel; 
+      printf("  AvcConfig->nAllowedPictureTypes %d\n",AvcConfig->nAllowedPictureTypes);  
+    printf("	AvcConfig->bFrameMBsOnly %d\n",AvcConfig->bFrameMBsOnly);        									
+       printf(" AvcConfig->bMBAFF %d\n",AvcConfig->bMBAFF);               
+        printf("AvcConfig->bEntropyCodingCABAC %d\n",AvcConfig->bEntropyCodingCABAC);  
+        printf("AvcConfig->bWeightedPPrediction %d\n",AvcConfig->bWeightedPPrediction); 
+        printf("AvcConfig->nWeightedBipredicitonMode %d\n",AvcConfig->nWeightedBipredicitonMode); 
+       printf(" AvcConfig->bconstIpred  %d\n",AvcConfig->bconstIpred);
+        printf("AvcConfig->bDirect8x8Inference %d\n",AvcConfig->bDirect8x8Inference);  
+	    printf("AvcConfig->bDirectSpatialTemporal %d\n",AvcConfig->bDirectSpatialTemporal);
+	    printf("AvcConfig->nCabacInitIdc %d\n",AvcConfig->nCabacInitIdc);  
+   /* AvcConfig->nSliceHeaderSpacing;  
+    AvcConfig->nPFrames;     
+    AvcConfig->nBFrames;     
+    AvcConfig->bUseHadamard;
+    AvcConfig->nRefFrames;  
+	AvcConfig->nRefIdx10ActiveMinus1;
+	AvcConfig->nRefIdx11ActiveMinus1;
+    AvcConfig->bEnableUEP;  
+    AvcConfig->bEnableFMO;  
+    AvcConfig->bEnableASO;  
+    AvcConfig->bEnableRS;   
+    //OMX_VIDEO_AVCPROFILETYPE eProfile;
+	//OMX_VIDEO_AVCLEVELTYPE eLevel; 
+    AvcConfig->nAllowedPictureTypes;  
+	AvcConfig->bFrameMBsOnly;        									
+    AvcConfig->bMBAFF;               
+    AvcConfig->bEntropyCodingCABAC;  
+    AvcConfig->bWeightedPPrediction; 
+    AvcConfig->nWeightedBipredicitonMode; 
+    AvcConfig->bconstIpred ;
+    AvcConfig->bDirect8x8Inference;  
+	AvcConfig->bDirectSpatialTemporal;
+	AvcConfig->nCabacInitIdc;
+    */
+  
+	//OMX_VIDEO_AVCLOOPFILTERTYPE eLoopFilterMode;
+        //OMX_IndexParamVideoAvc
+        //OMX_VIDEO_PARAM_AVCTYPE
+    }
 	
 //Set QP restrict QP : means if encoder choose a QP which is not in this range, Frame is dropped
 	void setQPLimits(int QMin=10,int QMax=50)
@@ -1387,6 +1464,14 @@ LOW_LATENCY mode is not a mode intended for general use. There was a specific us
 		
 		setQPLimits(QPCalculation,QPCalculation);
 	} 
+    void setDQP(int dqp)
+    {    
+        Parameter<OMX_PARAM_U32TYPE> rc_dqp;
+        rc_dqp->nPortIndex=OPORT;
+        rc_dqp->nU32=dqp;
+        ERR_OMX( OMX_SetParameter(component_,OMX_IndexParamBrcmVideoRCSliceDQuant, &rc_dqp)," DQP");
+        
+    }    
 
 // ONLY IF RATECONTROL is not CBR/VBR
  void setQP(int QPi,int QPp)
@@ -1410,7 +1495,7 @@ Set pQuantization defaults
      pComponentPrivate->pQuantization->nQpB       = 0;
 */
 }
-	void setMultiSlice(int SliceSize)
+	void setMultiSlice(int SliceSize,OMX_VIDEO_INTRAREFRESHTYPE Mode=OMX_VIDEO_IntraRefreshCyclicMrows)
 	{
 
 /*typedef enum OMX_VIDEO_AVCSLICEMODETYPE {
@@ -1441,12 +1526,47 @@ Set pQuantization defaults
 		ERR_OMX( OMX_SetParameter(component_,OMX_IndexConfigBrcmVideoEncoderMBRowsPerSlice, &MultiSliceRow)," MultisliceRow");
 		*/
 
+    // OMX_VIDEO_IntraRefreshCyclic,                         /**< Cyclic intra refresh, bit 0 is set*/ -> 
+    //OMX_VIDEO_IntraRefreshAdaptive,                       /**< Adaptive intra refresh, bit 1 is set*/
+    //OMX_VIDEO_IntraRefreshBoth,                           /**< Cyclic + Adaptive intra refresh (no mrows since bit 2 is off)*/
+    //OMX_VIDEO_IntraRefreshKhronosExtensions = 0x6F000000, /**< Reserved region for introducing Khronos Standard Extensions */ 
+    //OMX_VIDEO_IntraRefreshVendorStartUnused = 0x7F000000, /**< Reserved region for introducing Vendor Extensions */
+    //OMX_VIDEO_IntraRefreshCyclicMrows,                    /**< Cyclic intra refresh, multiple rows at a time bits 0 and 2 are set*/
+    //nAirMBs      : Number of intra macroblocks to refresh in a frame when  AIR is enabled (Adaptative)
+    // nAirRef      : Number of times a motion marked macroblock has to be     intra coded ??
+    //  nCirMBs      : Number of consecutive macroblocks to be coded as "intra"   when CIR is enabled Cyclic
+    // OMX_U32 nPirMBs : Perdiodic ?????
 		Parameter<OMX_VIDEO_PARAM_INTRAREFRESHTYPE> IntraRefreshType;
 		IntraRefreshType->nPortIndex=OPORT;
-		ERR_OMX( OMX_GetParameter(component_,  OMX_IndexParamVideoIntraRefresh, &IntraRefreshType)," IntraRefreshMode");
-		IntraRefreshType->eRefreshMode=OMX_VIDEO_IntraRefreshCyclicMrows;
+    	ERR_OMX( OMX_GetParameter(component_,  OMX_IndexParamVideoIntraRefresh, &IntraRefreshType)," IntraRefreshMode");
+        //printf("Refresh Mode %d nAirMBs %d nAirRef %d nCirMBs %d nPirMBs %d\n",IntraRefreshType->eRefreshMode,IntraRefreshType->nAirMBs,IntraRefreshType->nAirRef,IntraRefreshType->nCirMBs,IntraRefreshType->nPirMBs);
+
+		IntraRefreshType->eRefreshMode=Mode ;//OMX_VIDEO_IntraRefreshCyclicMrows;
 		//OMX_VIDEO_IntraRefreshPseudoRand --> CRASH ABOUT 5 econds
-		IntraRefreshType->nCirMBs=SliceSize;
+        if(Mode==OMX_VIDEO_IntraRefreshCyclic)
+        {
+
+         // Update macroblocks in a cyclic fashion with 10% of all MBs within
+        // frame gets updated at one time. It takes about 10 frames to
+        // completely update a whole video frame. If the frame rate is 30,
+        // it takes about 333 ms in the best case (if next frame is not an IDR)
+        // to recover from a lost/corrupted packet.
+        //    mbs = (((width + 15) / 16) * ((height + 15) / 16) * 10) / 100;
+
+
+     		IntraRefreshType->nAirMBs=1;
+            IntraRefreshType->nAirRef=0;
+		    IntraRefreshType->nCirMBs=SliceSize;//When OMX_VIDEO_IntraRefreshCyclic
+            IntraRefreshType->nPirMBs =256; 
+        }
+        else
+        {
+            IntraRefreshType->nAirMBs=0;
+            IntraRefreshType->nAirRef=0;
+		    IntraRefreshType->nCirMBs=0;
+            IntraRefreshType->nPirMBs =0; 
+        }
+   		
 		ERR_OMX( OMX_SetParameter(component_,  OMX_IndexConfigBrcmVideoIntraRefresh/*OMX_IndexParamVideoIntraRefresh*/, &IntraRefreshType)," IntraRefreshMode");
 
 		// WARNING : IN this mode NO I frame are generate : NOT SYNCHFRAME 
@@ -1983,7 +2103,7 @@ class TSEncaspulator
          size_t fn = 0;
 	#define MAX_SIZE_PICTURE 256000
 	uint8_t *InternalBuffer;//[MAX_SIZE_PICTURE];
-	uint8_t PictureHeader[500];
+	uint8_t PictureHeader[5000];
 	int PictureHeaderSize=0;
 	int InternalBufferSize=0;
 	int VideoPid;
@@ -2078,9 +2198,9 @@ class TSEncaspulator
 		ts_setup_transport_stream(writer, &tsmain);
    		ts_setup_sdt(writer);
    		ts_setup_mpegvideo_stream(writer, VideoPid,
-				     42,//3.2
+				     42,//4.0 - 4.0 is maximum level on raspberry , however, need 4.2 for 90 fps
                                      AVC_HIGH, //Fixme should pass Profile and Level
-                                     VideoBitrate,
+                                     TsBitrate,
                                      40000,//Fix Me : should have to be calculated
                                      Videofps);
 		if(IsAudioPresent==1)
@@ -2110,7 +2230,7 @@ class TSEncaspulator
         {
             IsCodec=true;
             
-            /*printf("CODEC: ");
+           /* printf("CODEC: ");
             for(int i=0;i<size;i++)
             {
                 printf("%x ",buffer[i]);
@@ -2123,10 +2243,17 @@ class TSEncaspulator
 		{
 			
 			
-			if((OmxFlags&OMX_BUFFERFLAG_SYNCFRAME))
+			if((OmxFlags&OMX_BUFFERFLAG_SYNCFRAME)||(IsCodec))
             {
 				tsframe.frame_type=LIBMPEGTS_CODING_TYPE_SLICE_IDR|LIBMPEGTS_CODING_TYPE_SLICE_I;
-                
+                /*uint8_t SEIRecovery[]={0,0,0,1,6,1,6,0,0,3,0,0,3,0,0,0x80};
+                memcpy(InternalBuffer+InternalBufferSize,SEIRecovery,16);
+                InternalBufferSize+=16;*/
+                /*if(PictureHeaderSize)
+                {
+                    memcpy(InternalBuffer+InternalBufferSize,PictureHeader,PictureHeaderSize);
+		            InternalBufferSize+=PictureHeaderSize;
+                }*/
             }
 			else
             {
@@ -2134,10 +2261,28 @@ class TSEncaspulator
 				tsframe.frame_type=LIBMPEGTS_CODING_TYPE_SLICE_P;
             }
 			
+                        if(IsCodec)
+                        {
+//                              printf("InternalBuffer[InternaBufferSize-size+4]=%x\n",InternalBuffer[InternalBufferSize-size+4]);
+                              //  InternalBuffer[InternalBufferSize-size+4]=0x25;
+                        }
+
 			tsframe.data=InternalBuffer+PictureHeaderSize;
 			tsframe.size=InternalBufferSize;
 				
-				
+			if(key_frame==1) 
+            {
+                FILE *debugfile;
+                char Name[255];
+                sprintf(Name,"Pic%d.264",key_frame);
+                debugfile=fopen(Name,"wb");
+                fwrite(tsframe.data,1,tsframe.size,debugfile);
+                fclose(debugfile);
+                
+                /*memcpy(PictureHeader,tsframe.data+64,412);
+                PictureHeaderSize=412;*/
+                
+            }	
 			
 			//if(!(OmxFlags&OMX_BUFFERFLAG_ENDOFFRAME)) return;
 
@@ -2155,10 +2300,11 @@ class TSEncaspulator
 			InternalBufferSize=0; //Purge 
             IsCodec=false;
 			tsframe.pid=VideoPid;
-			int MaxVideoBitrate=tsmain.muxrate/*-10000-8000*1.5*IsAudioPresent*/; //MINUS SI/PSI
+			int MaxVideoBitrate=tsmain.muxrate-10000-8000*1.5*IsAudioPresent; //MINUS SI/PSI
 			TotalFrameSize=tsframe.size;
-			float TimeToTransmitFrameUs= ((float)TotalFrameSize*8.0*1e3*1.2/(float)MaxVideoBitrate); //in ms
-			
+			float TimeToTransmitFrameUs= ((float)TotalFrameSize*8.0*1e3*1.1/(float)MaxVideoBitrate); //in ms
+			static float SumTransmitDuration=0;
+                                SumTransmitDuration+=TimeToTransmitFrameUs;
 			//if(TimeToTransmitFrameUs>FrameDuration)
 				//printf("Frame=%lld Time to Tx %f a Frame of %d  MaxVideoBitrate=%d\n",key_frame,TimeToTransmitFrameUs,TotalFrameSize,MaxVideoBitrate);
 
@@ -2166,27 +2312,47 @@ class TSEncaspulator
 			if(Time==NULL)//Frame base calculation
 			{
 				//printf("MaxVideo=%d TotalSize=%d Temps=%f\n",MaxVideoBitrate,TotalFrameSize,TimeToTransmitFrameUs);
-				printf("TimeToTransmitFrameUs = %f (%d bytes picture) : DelayPTS = %d\n",TimeToTransmitFrameUs,TotalFrameSize,DelayPTS);
-				if(TimeToTransmitFrameUs<=DelayPTS)
+				
+				//if(TimeToTransmitFrameUs<=DelayPTS)
 				{
-                    vdts=((key_frame)*FrameDuration+(DelayPTS-TimeToTransmitFrameUs))*90LL;//vpts-(5*90LL); //5ms between dts and pts
+                    vdts=(key_frame*FrameDuration+DelayPTS)*90LL;//vpts-(5*90LL); //5ms between dts and pts
 					vpts=((key_frame)*FrameDuration+DelayPTS)*90LL;
-					
+					tsframe.cpb_initial_arrival_time =(SumTransmitDuration)*90LL*300L ;
+                    tsframe.cpb_final_arrival_time =(SumTransmitDuration-DelayPTS)*90LL*300L ;//(key_frame*FrameDuration+DelayPTS-TimeToTransmitFrameUs)*90LL*300L ;
+                    /*if(abs(SumTransmitDuration-key_frame*FrameDuration)>2*DelayPTS) 
+                        SumTransmitDuration=key_frame*FrameDuration;
+                    else*/
+
+                    //if( TimeToTransmitFrameUs > DelayPTS) printf("Overflow PTS %d < Tx time %f\n",DelayPTS,TimeToTransmitFrameUs);
+
+                    //printf("TimeToTransmitFrameUs %f SumTransmitDuration %f -> Key %f : Diff %f\n",TimeToTransmitFrameUs, SumTransmitDuration,key_frame*FrameDuration,key_frame*FrameDuration-SumTransmitDuration );
+                   
+                    if(tsframe.frame_type!=LIBMPEGTS_CODING_TYPE_SLICE_P)                   SumTransmitDuration=key_frame*FrameDuration; 
+
+
+  
+                    //printf("vdts %f vpts = %f (%d bytes picture) : DelayPTS = %d\n",SumTransmitDuration,TimeToTransmitFrameUs,TotalFrameSize,DelayPTS);    
+						
 
 				}
-				else
-				{
-                        printf("YOOOOP");
-                        vdts=((key_frame)*FrameDuration)*90LL;
-						vpts=((key_frame)*FrameDuration)*90LL;
-						
-				}
+				
                     // Simple algo which works !
-                    //tsframe.cpb_initial_arrival_time =((key_frame-1)*FrameDuration)*27000LL  ;
-	                //tsframe.cpb_final_arrival_time = ((key_frame)*FrameDuration)*27000LL; 	
+                     tsframe.cpb_initial_arrival_time =((key_frame-1)*FrameDuration)*27000LL  ;
+                     tsframe.cpb_final_arrival_time = ((key_frame)*FrameDuration)*27000LL; 
+
+                    /* if(tsframe.frame_type==LIBMPEGTS_CODING_TYPE_SLICE_P)
+                    {
+                             tsframe.cpb_initial_arrival_time =((key_frame)*FrameDuration)*27000LL  ;
+                            tsframe.cpb_final_arrival_time = ((key_frame)*FrameDuration)*27000LL; 
+                    }
+                    else
+                    {
+                        tsframe.cpb_initial_arrival_time =((key_frame)*FrameDuration-TimeToTransmitFrameUs)*27000LL  ;
+                        tsframe.cpb_final_arrival_time = ((key_frame)*FrameDuration-TimeToTransmitFrameUs)*27000LL; 	
+                    }
+	                */
 				      
-                tsframe.cpb_initial_arrival_time =((key_frame)*FrameDuration-TimeToTransmitFrameUs)*90LL*300L ;
-                 tsframe.cpb_final_arrival_time =((key_frame)*FrameDuration-TimeToTransmitFrameUs)*90LL*300L ;
+                
 	           // tsframe.cpb_final_arrival_time = ((key_frame)*FrameDuration+TimeToTransmitFrameUs)*90LL*300L; 
 
 
@@ -2220,17 +2386,19 @@ class TSEncaspulator
 			tsframe.ref_pic_idc = 0; //Fixme (frame->pict_type == AV_PICTURE_TYPE_B) ? 1 : 0
 			tsframe.write_pulldown_info=0;
 
-			if(key_frame>=4) //Skip first frame(s)
+			if(key_frame>=2) //Skip first frame(s)
 			{				
 				ret = ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
 					if(len)
                     {
                         
-        				printf(" Init %lld Arrival %lld dts %lld pts %lld First PCR=%lld, End=%lld\n",tsframe.cpb_initial_arrival_time/27000LL,tsframe.cpb_final_arrival_time/27000LL,vdts/90L,vpts/90L,pcr_list[0]/27000LL-10000,pcr_list[(len/188)-1]/27000LL-10000);
+        				//printf("Delta : %lld Init %lld Arrival %lld dts %lld pts %lld First PCR=%lld, End=%lld\n",(pcr_list[(len/188)-1]-pcr_list[0])/27000LL,tsframe.cpb_initial_arrival_time/27000LL,tsframe.cpb_final_arrival_time/27000LL,vdts/90L,vpts/90L,pcr_list[0]/27000LL-10000,pcr_list[(len/188)-1]/27000LL-10000);
                         LastPCR=pcr_list[(len/188)-1]/27000LL-10000; //In ms
                     }
                     else
+                    {
                         printf("Skip Init %lld Arrival %lld dts %lld pts %lld \n",tsframe.cpb_initial_arrival_time/27000LL,tsframe.cpb_final_arrival_time/27000LL,vdts/90L,vpts/90L);
+                    }
 			}	
 			else 
 				len=0;
@@ -2273,7 +2441,8 @@ class TSEncaspulator
 			}
 			else
 			{
-				fprintf(stderr, "tswrite frame Len=0 Ret=%d tsframe.size=%d originalsize=%d\n",ret,tsframe.size,size);
+                
+				//fprintf(stderr, "tswrite frame Len=%d Ret=%d tsframe.size=%d \n",len,ret,tsframe.size);
 			}	
 		}
 	}
@@ -2442,6 +2611,8 @@ private:
 	struct timespec InitTime;
 	FILE *AudioIn=NULL;
     bool VideoPreview=false;
+    int m_IDRPeriod=0;
+    int m_RowBySlice;
 public:
 	void Init(VideoFromat &VideoFormat,char *FileName,char *Udp,int VideoBitrate,int TsBitrate,int SetDelayPts,int PMTPid,char *sdt,int fps=25,int IDRPeriod=100,int RowBySlice=0,int EnableMotionVectors=0)
 	{	
@@ -2490,18 +2661,26 @@ public:
 	}
 
 		    encoder.setCodec(OMX_VIDEO_CodingAVC);
-		    encoder.setIDR(IDRPeriod);	
+            m_IDRPeriod=IDRPeriod;
+            if(!RowBySlice)
+        		  encoder.setIDR(IDRPeriod);	
+            else
+                  encoder.setIDR(0);	
 		    encoder.setSEIMessage();
 		    if(EnableMotionVectors) encoder.setVectorMotion();
 	
 
 			encoder.setLowLatency();
 			encoder.setSeparateNAL();
+            m_RowBySlice=RowBySlice;
 			if(RowBySlice)
-				encoder.setMultiSlice(RowBySlice);
-			else
-				encoder.setMinizeFragmentation(); // Minimize frag seems to block at high resolution : to inspect
+
+    
+				encoder.setMultiSlice(RowBySlice/*,OMX_VIDEO_IntraRefreshCyclic*//*OMX_VIDEO_IntraRefreshBoth*/);
+			/*else
+				encoder.setMinizeFragmentation(); // Minimize frag seems to block at high resolution : to inspect*/
             
+              
 		    //encoder.setEED();
 
 	/*OMX_VIDEO_AVCProfileBaseline = 0x01,   //< Baseline profile 
@@ -2510,6 +2689,7 @@ public:
 	    OMX_VIDEO_AVCProfileHigh     = 0x08,   //< High profile 
 		OMX_VIDEO_AVCProfileConstrainedBaseline
 	*/
+             //encoder.setLevelExtension(50000);
 		    encoder.setProfileLevel(OMX_VIDEO_AVCProfileHigh);
 
 			// With Main Profile : have more skipped frame
@@ -2517,8 +2697,12 @@ public:
 		   tsencoder.ConstructTsTree(VideoBitrate,TsBitrate,PMTPid,sdt,fps,1); 	
 		 EncVideoBitrate=VideoBitrate;
 	
-		    //encoder.setPeakRate(VideoBitrate*4);
+		    encoder.setPeakRate(VideoBitrate*1.05/fps);
+            //encoder.setDQP(10); // Normally to 2
+            //encoder.setQPLimits(28,51); // To constrain I picture size : depend on bitrate !!!!
+            encoder.setAdvanceddAVC();
 		    //encoder.setMaxFrameLimits(10000*8);
+           
 		}
         ERR_OMX( OMX_SetupTunnel(camera.component(), Camera::OPORT_VIDEO, encoder.component(), Encoder::IPORT),
                 "tunnel camera.video -> encoder.input");
@@ -2580,7 +2764,7 @@ public:
 		}
 		if (!want_quit&&(encBuffer.filled()))
 		 {
-			       //encoder.getEncoderStat(encBuffer.flags());
+			      // encoder.getEncoderStat(encBuffer.flags());
 	      		
 				//encoder.setDynamicBitrate(EncVideoBitrate);
 				//encoder.setQP(20,20);
@@ -2601,7 +2785,7 @@ public:
 							int Motionx=encBuffer.data()[((RealWidthMB+1)*j+i)*4];
 							int Motiony=encBuffer.data()[((RealWidthMB+1)*j+i)*4+1];
 							int MotionAmplitude=sqrt((double)((Motionx * Motionx) + (Motiony * Motiony)))/sqrt(2);
-                                                      
+                                                      encoder.setDynamicBitrate(EncVideoBitrate);
                             if(MotionAmplitude>0)
                             {
                                     int intensity=(7*MotionAmplitude)/256+31;
@@ -2675,7 +2859,26 @@ else
 					//key_frame++; //Skipped Frame, key_frame++ to allow correct timing for next valid frames
 					printf("!");
 				}
-				//if(key_frame%100==0) encoder.requestIFrame();
+                if(m_RowBySlice) //No I picture with this mode ?!
+                {
+				    if(((key_frame-1)%(m_IDRPeriod)>=m_IDRPeriod-2))
+                    {
+                            
+                            //encoder.setDynamicBitrate(EncVideoBitrate/4);
+                           // encoder.setQPLimits(35,35);
+                            if(((key_frame-1)%(m_IDRPeriod)==m_IDRPeriod-1))
+                                encoder.requestIFrame();
+                             //encoder.setMultiSlice(m_RowBySlice,OMX_VIDEO_IntraRefreshCyclic);
+                    }
+                    else
+                    {
+                            // encoder.setDynamicBitrate((EncVideoBitrate));
+                            //encoder.setDynamicBitrate(EncVideoBitrate);
+                            //encoder.setQPLimits(10,40);
+                            //encoder.setMultiSlice(m_RowBySlice);
+                    }
+                    
+                }
 				// Buffer flushed, request a new buffer to be filled by the encoder component
                 /*if(encBuffer.dataSize()!=65536)
                 	encBuffer.setFilled(false);
@@ -2898,7 +3101,7 @@ public:
 		    encoder.setSEIMessage();
 		    if(EnableMotionVectors) encoder.setVectorMotion();
 			//encoder.setQFromBitrate(VideoBitrate,Videofps,CurrentVideoFormat.width,CurrentVideoFormat.height);
-			//encoder.setQPLimits(10,40);
+			//encoder.setQPLimits(20,25);
 			//encoder.setQP(20,20);
 			encoder.setLowLatency();
 			//encoder.setSeparateNAL();
