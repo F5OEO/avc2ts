@@ -2893,7 +2893,7 @@ else
                 }
 		  }
 			//===== test Audio =====
-#define WITH_AUDIO 1
+//#define WITH_AUDIO 1
 #ifdef WITH_AUDIO
 				{		
 				static 	uint8_t AudioBuffer[64000];
@@ -3385,7 +3385,7 @@ else
 	gettime_now.tv_nsec=gettime_now.tv_nsec-(int64_t)InitTime.tv_nsec;
 }
 //===== test Audio =====
-#define WITH_AUDIO 1
+//#define WITH_AUDIO 1
 #ifdef WITH_AUDIO
 				{		
 				static 	uint8_t AudioBuffer[64000];
