@@ -1126,7 +1126,7 @@ namespace rpi_omx
             portDef->format.video.nBitrate     = bitrate;
            portDef->nBufferSize=256000; //By default 65536, but increased for high resolution with big I pictures
           // printf("portDef->nBufferCountActual %d\n",portDef->nBufferCountActual);
-            printf("Video encoding format=%d x %d\n",portDef->format.video.nFrameWidth,portDef->format.video.nFrameHeight);
+            printf("Video encoding format=%d x %d @ %d fps\n",portDef->format.video.nFrameWidth,portDef->format.video.nFrameHeight,portDef->format.video.xFramerate>>16);
 	   //printf("FPS from camera=%x\n",cameraPortDef->format.video.xFramerate);	
             if (framerate)
                 portDef->format.video.xFramerate = framerate<<16;
@@ -2311,7 +2311,7 @@ class TSEncaspulator
             CodecSize=0;
 			tsframe.pid=VideoPid;
 			//int MaxVideoBitrate=tsmain.muxrate-10000-8000*1.5*IsAudioPresent; //MINUS SI/PSI
-            int MaxVideoBitrate=VideoBitrate*1.0012;
+            int MaxVideoBitrate=VideoBitrate*1.0012; //*1.0012 for 50fps
 			TotalFrameSize=tsframe.size;
 			float TimeToTransmitFrameUs= ((float)(TotalFrameSize)*8.0*1e3*1.00/(float)MaxVideoBitrate); //in ms
 			static float SumTransmitDuration=0;
@@ -2394,7 +2394,7 @@ class TSEncaspulator
                     {
                        if(tsframe.frame_type!=LIBMPEGTS_CODING_TYPE_SLICE_P)  
                         {
-                            //printf("PCR/DTS = %lld\n",vpts/90L-tsframe.cpb_initial_arrival_time/27000LL);
+                            printf("FrameDuration = %f PCR/DTS = %lld\n",FrameDuration,vpts/90L-tsframe.cpb_initial_arrival_time/27000LL);
                         }
         				//printf("PCR/DTS = %lld Delta : %lld Init %lld Arrival %lld dts %lld pts %lld First PCR=%lld, End=%lld\n",vpts/90L-tsframe.cpb_initial_arrival_time/27000LL,(pcr_list[(len/188)-1]-pcr_list[0])/27000LL,tsframe.cpb_initial_arrival_time/27000LL,tsframe.cpb_final_arrival_time/27000LL,vdts/90L,vpts/90L,pcr_list[0]/27000LL-10000,pcr_list[(len/188)-1]/27000LL-10000);
                         
@@ -2633,6 +2633,7 @@ public:
 		 // configuring camera
        
 		camera.setVideoFromat(VideoFormat,VideoPreview);
+        
 		camera.setImageDefaults();
          camera.getSensorModes();
          camera.getSensorCameraMode();   
@@ -2713,7 +2714,7 @@ public:
 	
 		   // encoder.setPeakRate(VideoBitrate*1.1);
            // encoder.setDQP(10); // Normally to 2
-            //encoder.setQPLimits(28,51); // To constrain I picture size : depend on bitrate !!!!
+            encoder.setQPLimits(2,51); // To have high bitrate even at low fps and size : for Now a MUST
             encoder.setAdvanceddAVC();
 		    //encoder.setMaxFrameLimits(TsBitrate*1.5/fps);
            
