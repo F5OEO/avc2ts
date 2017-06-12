@@ -892,11 +892,11 @@ namespace rpi_omx
             }
             if(Mode==OMX_ALL)
             {
-                for(int i=0;i<sensor->nNumModes;i++)
+                for(unsigned int i=0;i<sensor->nNumModes;i++)
                 {
                     sensor->nModeIndex=i;
                      ERR_OMX( OMX_GetParameter(component_, OMX_IndexConfigCameraSensorModes, &sensor)," Get sensor mode");
-                    //printf("Mode %d : %d x %d Padding %d-%d Fps %d-%d\n",sensor->nModeIndex,sensor->nWidth,sensor->nHeight,sensor->nPaddingRight,sensor->nPaddingDown,sensor->nFrameRateMin,sensor->nFrameRateMax);  
+                    
                 }
             }
             else
@@ -1454,11 +1454,11 @@ LOW_LATENCY mode is not a mode intended for general use. There was a specific us
 
 	void setQFromBitrate(int Bitrate,int fps,int Width,int Height,int MotionType=0)
 	{
-		int Coeff=2;
+		
 		//int QPCalculation=10+Width*Height*fps*Coeff/((Bitrate));
 		//For 720*576, 25fps  : QP=280birate⁻(0,345)
 		int QPCalculation=281*pow(Bitrate*(25/fps)*(720/Width)*(576/Height)/1000.0,-0.345)+10;	
-		printf("QP=%d\n",QPCalculation);
+		
 		if(QPCalculation>48) QPCalculation=48; //Fixme
 		if(QPCalculation<10) QPCalculation=10; //Fixme
 		
@@ -2185,7 +2185,7 @@ class TSEncaspulator
 		program[0].streams=ts_stream;
 		program[0].sdt = (sdt_program_ctx_t){
                     .service_type = DVB_SERVICE_TYPE_DIGITAL_TELEVISION,
-                    .service_name = "Rpidatv",
+                    .service_name = sdt,
                     .provider_name = sdt,
                 };
 
@@ -2213,7 +2213,7 @@ class TSEncaspulator
    		ts_setup_mpegvideo_stream(writer, VideoPid,
 				     42,//4.0 - 4.0 is maximum level on raspberry , however, need 4.2 for 90 fps
                                      AVC_HIGH, //Fixme should pass Profile and Level
-                                     VideoBitrate,
+                                     tsmain.muxrate-10000,//VideoBitrate,
                                      40000,//Fix Me : should have to be calculated
                                      Videofps);
 		if(IsAudioPresent==1)
@@ -2231,7 +2231,7 @@ class TSEncaspulator
 		ts_frame_t tsframe;
 		//static float TimeToTransmitFrameUs=0;
 		static int TotalFrameSize=0;
-		int ret;
+		int64_t ret;
 		int len;	
 		
         //printf("key_frame=%lld Size=%d Temps=%f\n",key_frame,size*8);
@@ -2280,8 +2280,9 @@ class TSEncaspulator
 			tsframe.data=InternalBuffer+PictureHeaderSize;
 			tsframe.size=InternalBufferSize;
 				
-			if(key_frame==1) 
+			/*if(key_frame==1) 
             {
+                
                 FILE *debugfile;
                 char Name[255];
                 sprintf(Name,"Pic%d.264",key_frame);
@@ -2289,39 +2290,21 @@ class TSEncaspulator
                 fwrite(tsframe.data,1,tsframe.size,debugfile);
                 fclose(debugfile);
                 
-                /*memcpy(PictureHeader,tsframe.data+64,412);
-                PictureHeaderSize=412;*/
-                
-            }	
+                               
+            }*/	
 			
-			//if(!(OmxFlags&OMX_BUFFERFLAG_ENDOFFRAME)) return;
-
-			/*if(OmxFlags&OMX_BUFFERFLAG_SYNCFRAME)
-			{
-				if(PictureHeaderSize>0)
-				{
-					printf("Insert Picture headear\n");
-					memcpy(InternalBuffer+InternalBufferSize,PictureHeader,PictureHeaderSize);
-					InternalBufferSize+=PictureHeaderSize;
-				tsframe.data=InternalBuffer;
-				tsframe.size=InternalBufferSize;
-				}
-			}*/	
+			
 			InternalBufferSize=0; //Purge 
             CodecSize=0;
 			tsframe.pid=VideoPid;
+           
 			//int MaxVideoBitrate=tsmain.muxrate-10000-8000*1.5*IsAudioPresent; //MINUS SI/PSI
-            int MaxVideoBitrate=VideoBitrate*1.0012; //*1.0012 for 50fps
+            int MaxVideoBitrate=VideoBitrate*1.005; //*1.0012 for 50fps
 			TotalFrameSize=tsframe.size;
 			float TimeToTransmitFrameUs= ((float)(TotalFrameSize)*8.0*1e3*1.00/(float)MaxVideoBitrate); //in ms
-			static float SumTransmitDuration=0;
-            static int64_t previous_cpb_final_arrival_time=0;
-            SumTransmitDuration+=TimeToTransmitFrameUs;
-			//if(TimeToTransmitFrameUs>FrameDuration)
-				//printf("Frame=%lld Time to Tx %f a Frame of %d  MaxVideoBitrate=%d\n",key_frame,TimeToTransmitFrameUs,TotalFrameSize,MaxVideoBitrate);
-
-			//if(OmxFlags&OMX_BUFFERFLAG_SYNCFRAME)
-			if(Time==NULL)//Frame base calculation
+			static int64_t previous_cpb_final_arrival_time=0;
+           
+            if(Time==NULL)//Frame base calculation
 			{
 				
 #define ADVANCE_BUT_ISSUE_WITH_PCR                   
@@ -2334,26 +2317,22 @@ class TSEncaspulator
 //#define FILLER_OVERHEAD (NALU_OVERHEAD+1)
 // ----------------------- END FROM X264 ----------------------
 
-                    if(tsframe.frame_type!=LIBMPEGTS_CODING_TYPE_SLICE_P)                  { SumTransmitDuration=(key_frame)*FrameDuration; }
-                    //vdts=(SumTransmitDuration+FrameDuration/4)*90LL;//(key_frame*FrameDuration+DelayPTS)*90LL;//vpts-(5*90LL); //5ms between dts and pts
-                   	//vpts=((key_frame)*FrameDuration+DelayPTS)*90LL;
-                   	//tsframe.cpb_initial_arrival_time =(SumTransmitDuration-TimeToTransmitFrameUs)*90LL*300LL ;
-                    //tsframe.cpb_final_arrival_time =(SumTransmitDuration)*90LL*300LL ;
-
-                   
+                    
+                   if(previous_cpb_final_arrival_time==0) previous_cpb_final_arrival_time=((key_frame-1)*FrameDuration)*90LL*300LL;
 
                     tsframe.cpb_initial_arrival_time=previous_cpb_final_arrival_time;
-                    tsframe.cpb_final_arrival_time= previous_cpb_final_arrival_time = tsframe.cpb_initial_arrival_time + (TimeToTransmitFrameUs) * 90LL*300LL;
-                    if((key_frame*FrameDuration+DelayPTS)<=tsframe.cpb_final_arrival_time/27000LL)
+                    if(tsframe.frame_type==LIBMPEGTS_CODING_TYPE_SLICE_P)
                     {
-                        printf("Late picture\n");
-                        tsframe.cpb_final_arrival_time= previous_cpb_final_arrival_time =(key_frame*FrameDuration+DelayPTS)*90LL*300LL;
-                        vdts=vpts=(key_frame*FrameDuration+DelayPTS+10)*90LL; // Delayed picture dts/pts because picture is late
+                        tsframe.cpb_final_arrival_time= previous_cpb_final_arrival_time = tsframe.cpb_initial_arrival_time + (TimeToTransmitFrameUs) * 90LL*300LL;
+                        vdts=vpts=(key_frame*FrameDuration+DelayPTS)*90LL;
+                        
                     }
-                    else
-                        vdts=vpts=(key_frame*FrameDuration+DelayPTS)*90LL;//vpts-(5*90LL); //5ms between dts and pts 
-
-
+                    else // I PICTURE : try to resynchronize if bitrate drift 
+                    {
+                    
+                        tsframe.cpb_final_arrival_time= previous_cpb_final_arrival_time = (key_frame*FrameDuration)*90LL*300LL;
+                        vdts=vpts=(key_frame*FrameDuration+DelayPTS)*90LL;
+                    }   
 #else
                    
                     
@@ -2386,31 +2365,27 @@ class TSEncaspulator
 			tsframe.ref_pic_idc = 0; //Fixme (frame->pict_type == AV_PICTURE_TYPE_B) ? 1 : 0
 			tsframe.write_pulldown_info=0;
 
-			if(key_frame>=2) //Skip first frame(s)
+			if(key_frame>=1) //Skip first frame(s)
 			{		
       
 				ret = ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
-					if(len)
+                 
+					if((ret==0)&&len)
                     {
-                       if(tsframe.frame_type!=LIBMPEGTS_CODING_TYPE_SLICE_P)  
+
+                         LastPCR=pcr_list[(len/188)-1]/27000LL-10000; //In ms     
+                       //if(tsframe.frame_type!=LIBMPEGTS_CODING_TYPE_SLICE_P)  
                         {
-                            printf("FrameDuration = %f PCR/DTS = %lld\n",FrameDuration,vpts/90L-tsframe.cpb_initial_arrival_time/27000LL);
+                            //printf("Key = %lld, PCR = %lld should be %d PCR/DTS = %lld  LatestPCRMUX %lld CurPCR %lld\n",key_frame,tsframe.cpb_initial_arrival_time/27000LL,(int)(key_frame*FrameDuration+DelayPTS),vpts/90L-tsframe.cpb_initial_arrival_time/27000LL,LastPCR);
                         }
-        				//printf("PCR/DTS = %lld Delta : %lld Init %lld Arrival %lld dts %lld pts %lld First PCR=%lld, End=%lld\n",vpts/90L-tsframe.cpb_initial_arrival_time/27000LL,(pcr_list[(len/188)-1]-pcr_list[0])/27000LL,tsframe.cpb_initial_arrival_time/27000LL,tsframe.cpb_final_arrival_time/27000LL,vdts/90L,vpts/90L,pcr_list[0]/27000LL-10000,pcr_list[(len/188)-1]/27000LL-10000);
-                        
-                        LastPCR=pcr_list[(len/188)-1]/27000LL-10000; //In ms
-                        
-                        int Delay=LastPCR-(SumTransmitDuration-TimeToTransmitFrameUs);
-                        if((Delay!=0))
-                        {
-                            //SumTransmitDuration+=Delay;
-                            //printf("Delay %d\n",Delay);
-                        }
+        			   
                     }
                     else
                     {
                         printf("Skip Init %lld Arrival %lld dts %lld pts %lld \n",tsframe.cpb_initial_arrival_time/27000LL,tsframe.cpb_final_arrival_time/27000LL,vdts/90L,vpts/90L);
                     }
+                    
+                   
 			}	
 			else 
 				len=0;
@@ -2437,7 +2412,8 @@ class TSEncaspulator
 					{
 						int n,ret;
 						ret=ioctl(fileno(vout), FIONREAD, &n);
-						if(n>40000) 
+                        
+						if((ret==0)&&(n>40000)) 
 							printf("Overflow outpipe %ld Pipe %d\n",time_difference,n);
 			
 						 fwrite(out, 1, len, vout);
@@ -2476,7 +2452,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
 		static uint64_t AudioFrame=0;
 		ts_frame_t tsframe;
 		int ret;
-		static float TimeToTransmitFrameUs=0;
+		//static float TimeToTransmitFrameUs=0;
 		int len;
 		double pts_increment;
 		tsframe.data=buffer;
@@ -2516,7 +2492,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
 	                //printf("Audio dts=%lld,pts=%lld\n",vdts/90,vpts/90);	
 			ret = ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
 	
-			if (len)
+			if ((ret==0)&&len)
 			{
 				
 					printf("Audio First PCR=%lld, End=%lld\n",pcr_list[0]/27000LL-10000,pcr_list[(len/188)-1]/27000LL-10000);
@@ -2525,7 +2501,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
 				{
 					int n,ret;
 					ret=ioctl(fileno(vout), FIONREAD, &n);
-					if(n>40000) 
+					if((ret==0)&&(n>40000)) 
 						printf("Overflow outpipe Pipe %d\n",n);
 			
 					 fwrite(out, 1, len, vout);
@@ -2575,7 +2551,7 @@ void udp_send( u_int8_t *b, int len )
 
 
 
-void udp_set_ip(const char *ip )
+void udp_set_ip(char *ip )
 {
     char text[40];
     char *add[2];
@@ -2659,16 +2635,16 @@ public:
 		    }
 		    portDef->format.video.nFrameWidth = vfResized.width;
 		    portDef->format.video.nFrameHeight = vfResized.height;
-	 if(VideoBitrate<150000)
+/*	 if(VideoBitrate<150000)
 	{
 		    encoder.setupOutputPortFromCamera(portDef, VideoBitrate*2);
-		    encoder.setBitrate(VideoBitrate*2,OMX_Video_ControlRateVariable/*OMX_Video_ControlRateConstant*/);
+		    encoder.setBitrate(VideoBitrate*2,OMX_Video_ControlRateVariable);
 					encoder.setQFromBitrate(VideoBitrate,fps,CurrentVideoFormat.width,CurrentVideoFormat.height);
 
 	}
-	else
+	else*/
 	{
-	    encoder.setupOutputPortFromCamera(portDef, VideoBitrate);
+	        encoder.setupOutputPortFromCamera(portDef, VideoBitrate);
 		    encoder.setBitrate(VideoBitrate,OMX_Video_ControlRateVariable/*OMX_Video_ControlRateVariable*//*OMX_Video_ControlRateConstantSkipFrames*//*OMX_Video_ControlRateConstant*/);
 	
 	}
@@ -2714,7 +2690,7 @@ public:
 	
 		   // encoder.setPeakRate(VideoBitrate*1.1);
            // encoder.setDQP(10); // Normally to 2
-            encoder.setQPLimits(2,51); // To have high bitrate even at low fps and size : for Now a MUST
+            encoder.setQPLimits(1,51); // To have high bitrate even at low fps and size : for Now a MUST
             encoder.setAdvanceddAVC();
 		    //encoder.setMaxFrameLimits(TsBitrate*1.5/fps);
            
@@ -2792,7 +2768,7 @@ public:
                      int RealHeightMB=((CurrentVideoFormat.height>>4)<<4)>>4;
                     #define couleur(param) printf("\033[%dm",param)
 					printf("\033[H\033[2J");
-    				int LenVector=encBuffer.dataSize();
+    				//int LenVector=encBuffer.dataSize();
 					//printf("X %d Y %d Keyframe %d LenVector %d\n",RealWidthMB,RealHeightMB,key_frame,LenVector);
 					for(int j=0;j<RealHeightMB;j++)
 					{
@@ -3083,6 +3059,7 @@ public:
 		if(Mode==Mode_VNCCLIENT)
 		{
 			printf("Connecting to VNCSERVER %s...\n",Extra);
+           
 			pvncclient=new VncClient(Extra,"datv");
 			int DisplayWidth,DisplayHeight,Rotate;
 
@@ -3094,7 +3071,7 @@ public:
 	
 			// configuring encoders
 		
-		    VideoFromat vfResized = VideoFormat;
+		    //VideoFromat vfResized = VideoFormat;
 		    
 		   if(VideoBitrate<150000)
 	{
@@ -3227,7 +3204,7 @@ void usleep_exactly(long MuToSleep )
 // generate an animated test card in YUV format
  int generate_test_card(OMX_U8 *buf, OMX_U32 * filledLen, int frame)
 {
-   int i, j;
+   unsigned int i, j;
 	frame=frame%256;
    OMX_U8 *y = buf, *u = y + CurrentVideoFormat.width * CurrentVideoFormat.height, *v =
       u + (CurrentVideoFormat.width >> 1) * (CurrentVideoFormat.height >> 1);
@@ -3237,7 +3214,7 @@ void usleep_exactly(long MuToSleep )
       OMX_U8 *pu = u + j * (CurrentVideoFormat.width >> 1);
       OMX_U8 *pv = v + j * (CurrentVideoFormat.width >> 1);
       for (i = 0; i < CurrentVideoFormat.width / 2; i++) {
-	 int z = (((i + frame) >> 4) ^ ((j + frame) >> 4)) & 15;
+	 //int z = (((i + frame) >> 4) ^ ((j + frame) >> 4)) & 15;
 	 py[0] = py[1] = py[CurrentVideoFormat.width] = py[CurrentVideoFormat.width + 1] = 0x80 + frame * 0x8;
 	 pu[0] = frame;//0x00 + z * 0x10;
 	 pv[0] = frame;//0x80 + z * 0x30;
@@ -3255,8 +3232,8 @@ void usleep_exactly(long MuToSleep )
  int generate_test_rgbcard(OMX_U8 *buf, OMX_U32 * filledLen, int frame)
 {
 	OMX_U8 *current=buf;
-   for(int j=0;j<CurrentVideoFormat.height;j++)
-	for(int i=0;i<CurrentVideoFormat.width;i++)
+   for(unsigned int j=0;j<CurrentVideoFormat.height;j++)
+	for(unsigned int i=0;i<CurrentVideoFormat.width;i++)
 	{	
 		*current++=255;		
 		*current++=frame%256;
@@ -3309,7 +3286,7 @@ void Run(bool want_quit)
 	{
 		Buffer& encBuffer = encoder.outBuffer();
 		Buffer& PictureBuffer = resizer.inBuffer();
-		static int QP=45;
+		
 		
 		
 		if (!want_quit&&encBuffer.filled())
@@ -3330,7 +3307,7 @@ void Run(bool want_quit)
                      int RealHeightMB=((CurrentVideoFormat.height>>4)<<4)>>4;
                     #define couleur(param) printf("\033[%dm",param)
 					printf("\033[H\033[2J");
-    				int LenVector=encBuffer.dataSize();
+    				//int LenVector=encBuffer.dataSize();
 					//printf("X %d Y %d Keyframe %d LenVector %d\n",RealWidthMB,RealHeightMB,key_frame,LenVector);
 					for(int j=0;j<RealHeightMB;j++)
 					{
@@ -3470,7 +3447,7 @@ else
 		if(!want_quit&&(FirstTime||PictureBuffer.filled()))
 		{
 			
-			OMX_U32 filledLen;
+			OMX_U32 filledLen=0;
 //			generate_test_card(PictureBuffer.data(),&filledLen,key_frame);
 			if(Mode==Mode_PATTERN)
 			{
@@ -3780,8 +3757,8 @@ bcm_host_init();
         VcosSemaphore sem("common semaphore");
         pSemaphore = &sem;
 
-        CameraTots *cameratots;
-	PictureTots *picturetots;
+        CameraTots *cameratots=NULL;
+	PictureTots *picturetots=NULL;
 if(TypeInput==0)
 {
 	cameratots=new CameraTots; 
@@ -3815,14 +3792,7 @@ else
 
         std::cerr << "Enter capture and encode loop, press Ctrl-C to quit..." << std::endl;
 
-        unsigned highCount = 0;
-        unsigned lowCount = 0;
-        unsigned noDataCount = 0;
        
-       
-
-	     
-	
         while (1)
         {
             
