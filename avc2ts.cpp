@@ -3110,8 +3110,8 @@ public:
 	    OMX_VIDEO_AVCProfileHigh     = 0x08,   //< High profile 
 		OMX_VIDEO_AVCProfileConstrainedBaseline
 	*/
-		    encoder.setProfileLevel(OMX_VIDEO_AVCProfileHigh);
-
+		    encoder.setProfileLevel(OMX_VIDEO_AVCProfileMain);
+         encoder.setQPLimits(1,51); // To have high bitrate even at low fps and size : for Now a MUST
 			// With Main Profile : have more skipped frame
 			tsencoder.SetOutput(FileName,Udp);
 		   tsencoder.ConstructTsTree(VideoBitrate,TsBitrate,PMTPid,sdt,fps,1); 	
@@ -3422,11 +3422,6 @@ else
 #endif
 				tsencoder.AddFrame(encBuffer.data(),encBuffer.dataSize(),OmxFlags,key_frame,DelayPTS/*,&gettime_now*/);
 										
-						
-						
-					
-			
-	
 		
 				}
 				else
