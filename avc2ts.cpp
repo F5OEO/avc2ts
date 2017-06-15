@@ -3216,19 +3216,14 @@ void usleep_exactly(long MuToSleep )
 	frame=frame%256;
    OMX_U8 *y = buf, *u = y + CurrentVideoFormat.width * CurrentVideoFormat.height, *v =
       u + (CurrentVideoFormat.width >> 1) * (CurrentVideoFormat.height >> 1);
-
-   for (j = 0; j < CurrentVideoFormat.height / 2; j++) {
-      OMX_U8 *py = y + 2 * j * CurrentVideoFormat.width;
-      OMX_U8 *pu = u + j * (CurrentVideoFormat.width >> 1);
-      OMX_U8 *pv = v + j * (CurrentVideoFormat.width >> 1);
-      for (i = 0; i < CurrentVideoFormat.width / 2; i++) {
+    memset(u,0x80,(CurrentVideoFormat.width>>1)*(CurrentVideoFormat.height));
+   for (j = 0; j < CurrentVideoFormat.height ; j++) {
+      OMX_U8 *py = y +  j * CurrentVideoFormat.width;
+      
+      for (i = 0; i < CurrentVideoFormat.width ; i++) {
 	 //int z = (((i + frame) >> 4) ^ ((j + frame) >> 4)) & 15;
-	 py[0] = py[1] = py[CurrentVideoFormat.width] = py[CurrentVideoFormat.width + 1] = 0x80 + frame * 0x8;
-	 pu[0] = frame;//0x00 + z * 0x10;
-	 pv[0] = frame;//0x80 + z * 0x30;
-	 py += 2;
-	 pu++;
-	 pv++;
+	 py[0] =  rand()%256;
+	 py++;
       }
    }
 
