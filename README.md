@@ -7,13 +7,7 @@
 $ ./preinstall.sh
 $ make
 ```
-# Dependencies
-libvncserver-dev
 
-On Debian jessie
-```sh
-$ sudo apt-get install libvncserver-dev 
-```
 # H264 encoder and transport stream encapsulator
 ```
 avc2ts -1.0.0
@@ -29,10 +23,11 @@ rpi-avc2ts  -o OutputFile -b BitrateVideo -m BitrateMux -x VideoWidth  -y VideoH
 -d 	      Delay PTS/PCR in ms
 -v	      Enable Motion vectors
 -i	      IDR Period
--t		TypeInput {0=Picamera,1=InternalPatern,2=USB Camera,3=Rpi Display,4=VNC}
+-t		TypeInput {0=Picamera,1=InternalPatern,2=USB Camera,3=Rpi Display,4=VNC,5=ffmpeg}
 -e 		Extra Arg:
 			- For usb camera name of device (/dev/video0)
 			- For VNC : IP address of VNC Server. Password must be datv
+            - For ffmpeg : url or file to stream
 -p 		Set the PidStart: Set PMT=PIDStart,Pidvideo=PidStart+1,PidAudio=PidStart+2
 -s 		Set Servicename : Typically CALL
 -h            help (print this help).
