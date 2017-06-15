@@ -12,7 +12,7 @@ make V=1 -f linux.mk
 cd ../
 
 # Required for ffmpegsrc.cpp
-sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libavdevice-dev
+sudo apt-get -y install libvncserver-dev libavcodec-dev libavformat-dev libswscale-dev libavdevice-dev
 
 # For transcoding youtube
 curl -L https://yt-dl.org/downloads/latest/youtube-dl -o youtube-dl
