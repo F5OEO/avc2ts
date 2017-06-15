@@ -48,6 +48,7 @@ extern "C" {
 #include "webcam.h"
 #include "grabdisplay.h"
 #include "vncclient.h"
+#include "ffmpegsrc.h"
 
 //#include <linux/videodev2.h>
 
@@ -2114,7 +2115,7 @@ class TSEncaspulator
 	 int64_t *pcr_list = NULL;
 	 uint8_t *out = NULL;
          size_t fn = 0;
-	#define MAX_SIZE_PICTURE 256000
+	#define MAX_SIZE_PICTURE 512000
 	uint8_t *InternalBuffer;//[MAX_SIZE_PICTURE];
 	uint8_t PictureHeader[5000];
 	int PictureHeaderSize=0;
@@ -2317,7 +2318,7 @@ class TSEncaspulator
 //#define FILLER_OVERHEAD (NALU_OVERHEAD+1)
 // ----------------------- END FROM X264 ----------------------
 
-                    
+                   if(TimeToTransmitFrameUs<5)  TimeToTransmitFrameUs=5; // Mini 1ms for 1 frame 
                    if(previous_cpb_final_arrival_time==0) previous_cpb_final_arrival_time=((key_frame-1)*FrameDuration)*90LL*300LL;
 
                     tsframe.cpb_initial_arrival_time=previous_cpb_final_arrival_time;
@@ -2681,8 +2682,8 @@ public:
 		OMX_VIDEO_AVCProfileConstrainedBaseline
 	*/
             
-		    encoder.setProfileLevel(OMX_VIDEO_AVCProfileBaseline);//OMX_VIDEO_AVCProfileHigh);
-            //encoder.setLevelExtension(1500);
+		    encoder.setProfileLevel(OMX_VIDEO_AVCProfileHigh);//OMX_VIDEO_AVCProfileHigh);
+            //encoder.setLevelExtension(VideoBitrate/1000);
 			// With Main Profile : have more skipped frame
 			tsencoder.SetOutput(FileName,Udp);
 		   tsencoder.ConstructTsTree(VideoBitrate,TsBitrate,PMTPid,sdt,fps,1); 	
@@ -2691,7 +2692,7 @@ public:
 		   // encoder.setPeakRate(VideoBitrate*1.1);
            // encoder.setDQP(10); // Normally to 2
             encoder.setQPLimits(1,51); // To have high bitrate even at low fps and size : for Now a MUST
-            encoder.setAdvanceddAVC();
+            //encoder.setAdvanceddAVC();
 		    //encoder.setMaxFrameLimits(TsBitrate*1.5/fps);
            
 		}
@@ -3014,6 +3015,7 @@ private:
 	Webcam *pwebcam;
 	GrabDisplay *pgrabdisplay;
 	VncClient *pvncclient;
+    ffmpegsrc *pffmpeg;
 	struct timespec InitTime;
 	FILE *AudioIn=NULL;
 
@@ -3023,6 +3025,7 @@ static const int Mode_PATTERN=0;
 		static const int Mode_V4L2=1;
 static const int Mode_GRABDISPLAY=2;
 static const int Mode_VNCCLIENT=3;
+static const int Mode_FFMPEG=4;    
 public:
 	void Init(VideoFromat &VideoFormat,char *FileName,char *Udp,int VideoBitrate,int TsBitrate,int SetDelayPts,int PMTPid,char* sdt,int fps=25,int IDRPeriod=100,int RowBySlice=0,int EnableMotionVectors=0,int ModeInput=Mode_PATTERN,char *Extra=NULL)
 	{
@@ -3067,25 +3070,26 @@ public:
 			printf("Resizer input = %d x %d\n",DisplayWidth,DisplayHeight);
 			resizer.setupOutputPort(DisplayWidth,DisplayHeight,VideoFormat, OMX_COLOR_Format32bitABGR8888);
 		}
+        if(Mode==Mode_FFMPEG)
+		{
+           
+			pffmpeg=new ffmpegsrc(Extra);
+            int CamWidth,CamHeight;
+			pffmpeg->GetVideoSize(CamWidth,CamHeight);
+			resizer.setupOutputPort(((CamWidth+31)>>5)<<5,((CamHeight+15)>>4)<<4,VideoFormat,OMX_COLOR_FormatYUV420PackedPlanar);
+		}
+        
 		//resizer.setupOutputPort(VideoFormat,OMX_COLOR_Format32bitABGR8888);//OK
 	
 			// configuring encoders
 		
 		    //VideoFromat vfResized = VideoFormat;
 		    
-		   if(VideoBitrate<150000)
-	{
-		printf("Using QP constant\n");
-		    encoder.setupOutputPort(VideoFormat,VideoBitrate*2,fps);
-		encoder.setQFromBitrate(VideoBitrate,fps,CurrentVideoFormat.width,CurrentVideoFormat.height);
-
-	}
-	else
-	{
+	
 	    	 encoder.setupOutputPort(VideoFormat,VideoBitrate,fps);	
 		    encoder.setBitrate(VideoBitrate,OMX_Video_ControlRateVariable/*OMX_Video_ControlRateConstant*/);
 	
-	} 
+	
 		
 		    //OMX_Video_ControlRateDisable seems not supported !!!
 			 encoder.setCodec(OMX_VIDEO_CodingAVC);
@@ -3098,10 +3102,11 @@ public:
 			//encoder.setQP(20,20);
 			encoder.setLowLatency();
 			//encoder.setSeparateNAL();
+			 encoder.setMinizeFragmentation(); // Minimize frag seems to block at high resolution : to inspect*/
+
 			if(RowBySlice)
-				encoder.setMultiSlice(RowBySlice);
-			else
-				encoder.setMinizeFragmentation();
+				encoder.setMultiSlice(RowBySlice,OMX_VIDEO_IntraRefreshCyclic/*OMX_VIDEO_IntraRefreshBoth*/);
+			
 		    //encoder.setEED();
 
 	/*OMX_VIDEO_AVCProfileBaseline = 0x01,   //< Baseline profile 
@@ -3110,7 +3115,7 @@ public:
 	    OMX_VIDEO_AVCProfileHigh     = 0x08,   //< High profile 
 		OMX_VIDEO_AVCProfileConstrainedBaseline
 	*/
-		    encoder.setProfileLevel(OMX_VIDEO_AVCProfileMain);
+		    encoder.setProfileLevel(OMX_VIDEO_AVCProfileHigh);
          encoder.setQPLimits(1,51); // To have high bitrate even at low fps and size : for Now a MUST
 			// With Main Profile : have more skipped frame
 			tsencoder.SetOutput(FileName,Udp);
@@ -3154,7 +3159,10 @@ public:
 		    {	
 			    pvncclient->SetOmxBuffer((unsigned char*)resizer.inBuffer().data());
 			}
-
+             if(Mode==Mode_FFMPEG)
+		    {
+				 pffmpeg->SetOmxBuffer((unsigned char*)resizer.inBuffer().data());
+		    }
 		    printf("Allocsize= %d\n",resizer.inBuffer().allocSize());
 		    encoder.allocBuffers(false);//Only  Bufout
 		
@@ -3489,6 +3497,16 @@ else
 					//printf("DiffFrame %d\n",FrameDiff);
 				}
 			}
+            if(Mode==Mode_FFMPEG)
+			{
+				
+				if(!pffmpeg->read_frame(2)){want_quit=1;return;};
+				
+				filledLen=PictureBuffer.allocSize();
+				usleep_exactly(1e6/Videofps);
+				//V4L2_read_frame(PictureBuffer.data(),&filledLen);
+				//usleep_exactly(1e6/(Videofps*2));
+			}
 			PictureBuffer.setDatasize(filledLen);
 			PictureBuffer.setFilled(false);
 			resizer.callEmptyThisBuffer();
@@ -3522,6 +3540,10 @@ else
 		if(Mode==Mode_VNCCLIENT)
 		{
 			free(pvncclient);
+		}
+        if(Mode==Mode_FFMPEG)
+		{
+			free(pffmpeg);
 		}	
 		// return the last full buffer back to the encoder component
 		{
@@ -3625,7 +3647,8 @@ int main(int argc, char **argv)
 	#define PATTERN 1
 	#define USB_CAMERA 2
 	#define DISPLAY 3
-	#define VNC 4		
+	#define VNC 4
+    #define FFMPEG 5		    		
 	int TypeInput=CAMERA;
 
 	while(1)
@@ -3769,7 +3792,9 @@ else
 	if(ExtraArg==NULL) ExtraArg="/dev/video0";break;
 	case DISPLAY:PictureMode=PictureTots::Mode_GRABDISPLAY;break;
 	case VNC:PictureMode=PictureTots::Mode_VNCCLIENT;
-	if(ExtraArg==NULL) {printf("IP of VNCServer should be set with -e option\n");exit(0);}
+	if(ExtraArg==NULL) {printf("IP of VNCServer should be set with -e option\n");exit(0);}break;
+    case FFMPEG:PictureMode=PictureTots::Mode_FFMPEG;
+	
 	
 	}
 	picturetots = new PictureTots;
