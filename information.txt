@@ -1,5 +1,47 @@
 For debugging :
-vcgencmd set_logging level=204
+vcgencmd set_logging level=8
 and 
 sudo vcdbg log msg
 sudo vcdbg log assert
+
+sudo vcdbg log msg  2>&1 | grep BO 
+
+/* Bitfield for indicating the category and level of a logging message. */
+#define LOGGING_GENERAL                   (1<<0)  /* for logging general messages */
+#define LOGGING_GENERAL_VERBOSE           (2<<0)
+#define LOGGING_CODECS                    (1<<2)  /* for codec messages */
+#define LOGGING_CODECS_VERBOSE            (2<<2)
+#define LOGGING_FILESYSTEM                (1<<4)  /* filesystem messages */
+#define LOGGING_FILESYSTEM_VERBOSE        (2<<4)
+#define LOGGING_VMCS                      (1<<6)  /* VMCS related messages */
+#define LOGGING_VMCS_VERBOSE              (2<<6)
+#define LOGGING_DISPMAN2                  (1<<8)  /* Dispman2/scalar logs */
+#define LOGGING_DISPMAN2_VERBOSE          (2<<8)
+#define LOGGING_GCE                       (1<<8)  /* Re-use Dispman2 for GCE logging */
+#define LOGGING_GCE_VERBOSE               (2<<8)
+#define LOGGING_CAMPLUS                   (1<<10) /* Camplus logs */
+#define LOGGING_CAMPLUS_VERBOSE           (2<<10)
+#define LOGGING_APPS                      (1<<12) /* Application logs */
+#define LOGGING_APPS_VERBOSE              (2<<12)
+#define LOGGING_CLOCKMAN_POWERMAN         (1<<14) /* Clockman + powerman logs */
+#define LOGGING_CLOCKMAN_POWERMAN_VERBOSE (2<<14)
+#define LOGGING_VCOS                      (1<<16)
+#define LOGGING_VCOS_VERBOSE              (2<<16)
+#define LOGGING_IMAGE_POOL                (1<<18) /* Image pool messages */
+#define LOGGING_IMAGE_POOL_VERBOSE        (2<<18)
+#define LOGGING_HDMI                      (1<<20) /* HDMI and HDCP messages */
+#define LOGGING_HDMI_VERBOSE              (2<<20)
+#define LOGGING_MINIMAL                   (1<<22) /* minimal logging for bandwidth measurement, ie all others off. */
+#define LOGGING_MINIMAL_VERBOSE           (2<<22)
+#define LOGGING_TUNER                     (1<<24) /* ISP Tuner logs - AGC, AWB etc */
+#define LOGGING_TUNER_VERBOSE             (2<<24)
+#define LOGGING_VCHI                      (1<<26) /* For all VCHI based services */
+#define LOGGING_VCHI_VERBOSE              (2<<26)
+#define LOGGING_FOCUS                     (1<<28) /* Focus messages */
+#define LOGGING_HANDLERS                  (1<<29) /* For handler messages */
+#define LOGGING_VOWIFI                    (1<<28) /* Re-use FOCUS for VOWIFI */
+#define LOGGING_VOWIFI_VERBOSE            (2<<28) /* Re-use HANDLERS for VOWIFI */
+// add more here
+#define LOGGING_USER                      (1<<30) /* only for code under development - do not check in! */
+#define LOGGING_USER_VERBOSE              (2<<30)
+
