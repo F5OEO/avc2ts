@@ -920,7 +920,8 @@ namespace rpi_omx
             portDef->format.video.nFrameWidth  = videoFormat.width;
             portDef->format.video.nFrameHeight = videoFormat.height;
             portDef->format.video.xFramerate   = videoFormat.framerate << 16;
-            portDef->format.video.nStride      = align(portDef->format.video.nFrameWidth, portDef->nBufferAlignment);
+            portDef->format.video.nStride      = align(portDef->format.video.nFrameWidth, 16);
+            portDef->format.video.nSliceHeight      = align(videoFormat.height, 16);
             portDef->format.video.eColorFormat = OMX_COLOR_FormatYUV420PackedPlanar;
             //printf("portDef->nBufferCountActual %d\n",portDef->nBufferCountActual);
             setPortDefinition(OPORT_VIDEO, portDef);
@@ -930,7 +931,7 @@ namespace rpi_omx
 	            portDef->format.video.nFrameWidth  = videoFormat.width;
                 portDef->format.video.nFrameHeight = videoFormat.height;
                 portDef->format.video.xFramerate   = videoFormat.framerate << 16;
-                portDef->format.video.nStride      = align(portDef->format.video.nFrameWidth, portDef->nBufferAlignment);
+                portDef->format.video.nStride      = align(portDef->format.video.nFrameWidth, 16);
                 portDef->format.video.eColorFormat = OMX_COLOR_FormatYUV420PackedPlanar;
 	            setPortDefinition(OPORT_PREVIEW, portDef);
             }   
@@ -1117,13 +1118,25 @@ namespace rpi_omx
 
         void setupOutputPortFromCamera(const Parameter<OMX_PARAM_PORTDEFINITIONTYPE>& cameraPortDef, unsigned bitrate, unsigned framerate = 0) // Framerate 0 means get it from Camera when tunelled
         {
+            
+            Parameter<OMX_PARAM_PORTDEFINITIONTYPE> portDefI;
+            getPortDefinition(IPORT, portDefI);
+            portDefI->format.video.nFrameWidth  = cameraPortDef->format.video.nFrameWidth;
+            portDefI->format.video.nFrameHeight = cameraPortDef->format.video.nFrameHeight;
+            portDefI->format.video.xFramerate   = cameraPortDef->format.video.xFramerate;
+            portDefI->format.video.nStride      =  align(cameraPortDef->format.video.nFrameWidth,16); //SHould be aligned ?
+            portDefI->format.video.nSliceHeight= align(cameraPortDef->format.video.nFrameHeight,16);
+            portDefI->format.video.eColorFormat=OMX_COLOR_FormatYUV420PackedPlanar;
+            setPortDefinition(IPORT, portDefI);
+
             Parameter<OMX_PARAM_PORTDEFINITIONTYPE> portDef;
             getPortDefinition(OPORT, portDef);
 	
             portDef->format.video.nFrameWidth  = cameraPortDef->format.video.nFrameWidth;
             portDef->format.video.nFrameHeight = cameraPortDef->format.video.nFrameHeight;
             portDef->format.video.xFramerate   = cameraPortDef->format.video.xFramerate;
-            portDef->format.video.nStride      = cameraPortDef->format.video.nStride; //SHould be aligned ?
+            portDef->format.video.nStride      =  align(cameraPortDef->format.video.nFrameWidth,16);; //SHould be aligned ?
+            portDef->format.video.nSliceHeight=align(cameraPortDef->format.video.nFrameHeight,16);
             portDef->format.video.nBitrate     = bitrate;
            portDef->nBufferSize=256000; //By default 65536, but increased for high resolution with big I pictures
           // printf("portDef->nBufferCountActual %d\n",portDef->nBufferCountActual);
@@ -1145,6 +1158,9 @@ namespace rpi_omx
 */
         }
 
+//From 6by9 :
+//Yes the IL spec does say that nSliceHeight is read only, but that is a barking made state of affairs. The components have no context over what they are connected to, nor whether they are in a low memory or max performance use case, hence why it is implemented as read/write.
+
 	void setupOutputPort(const VideoFromat Videoformat, unsigned bitrate, unsigned framerate = 25)
 	{
 		// Input Definition
@@ -1153,8 +1169,8 @@ namespace rpi_omx
 		portDefI->format.video.nFrameWidth  = Videoformat.width;
             portDefI->format.video.nFrameHeight = Videoformat.height;
             portDefI->format.video.xFramerate   = framerate<<16;
-            portDefI->format.video.nStride      = align(Videoformat.width,portDefI->nBufferAlignment);//(portDefI->format.video.nFrameWidth + portDefI->nBufferAlignment - 1) & (~(portDefI->nBufferAlignment - 1));
-	portDefI->format.video.nSliceHeight=Videoformat.height;
+            portDefI->format.video.nStride      = align(Videoformat.width,16);//(portDefI->format.video.nFrameWidth + portDefI->nBufferAlignment - 1) & (~(portDefI->nBufferAlignment - 1));
+	    portDefI->format.video.nSliceHeight=align(Videoformat.height,16);
 		portDefI->format.video.eColorFormat=OMX_COLOR_FormatYUV420PackedPlanar;
 	 setPortDefinition(IPORT, portDefI);	
 	

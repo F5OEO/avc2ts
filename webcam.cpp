@@ -39,7 +39,8 @@
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
-
+#define uint8 unsigned char
+#define uint32 unsigned int
 /*
  *  Copyright 2011 The LibYuv Project Authors. All rights reserved.
  *
