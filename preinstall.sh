@@ -4,6 +4,17 @@ cd libmpegts
 make
 cd ../
 
+#For libfdkaac
+sudo apt-get -y install autoconf libtool
+git clone https://github.com/mstorsjo/fdk-aac
+cd fdk-aac
+./autogen.sh
+./configure
+make
+cd ../
+
+
+#libyuv should be used for fast picture transformation : not yet implemented
 git clone https://chromium.googlesource.com/libyuv/libyuv
 cd libyuv
 #should patch linux.mk with -DHAVE_JPEG on CXX and CFLAGS

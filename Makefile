@@ -5,12 +5,12 @@ CFLAGS = -std=c++11 -Wno-multichar -Wall -Wno-format -g -I/opt/vc/include/IL -I/
 
 LDFLAGS = -Xlinker -R/opt/vc/lib -L/opt/vc/lib/ -Xlinker -L/usr/local/lib -Xlinker -R/usr/local/lib   # -Xlinker --verbose
 #LIBS = -L/opt/vc/lib  -rdynamic -lopenmaxil -lvcos -lbcm_host -lpthread -L/libmpegts/libmpegts.o -lm 
-LIBS = -lopenmaxil -lbcm_host -lvcos -lpthread -lm -lrt -lvncclient -ljpeg 
+LIBS = -lopenmaxil -lbcm_host -lvcos -lpthread -lm -lrt -lvncclient -ljpeg -lfdk-aac
 
 CFLAGS+=`pkg-config --cflags libavcodec libavformat libswscale libavutil libavdevice`
 LDFLAGS+=`pkg-config --libs libavcodec libavformat libswscale libavutil libavdevice`
 
-OFILES = vncclient.o grabdisplay.o avc2ts.o webcam.o ffmpegsrc.o ./libmpegts/libmpegts.a libyuv/libyuv.a
+OFILES = vncclient.o grabdisplay.o avc2ts.o webcam.o ffmpegsrc.o ./libmpegts/libmpegts.a libyuv/libyuv.a 
 
 .PHONY: all clean install dist
 
