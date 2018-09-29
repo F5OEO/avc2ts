@@ -10,7 +10,8 @@ git clone https://github.com/mstorsjo/fdk-aac
 cd fdk-aac
 ./autogen.sh
 ./configure
-make
+make && sudo make install
+sudo ldconfig
 cd ../
 
 
