@@ -2867,14 +2867,14 @@ class CameraTots
     int m_IDRPeriod = 0;
     int m_RowBySlice;
     AudioEncoder audioencoder;
-
+    int Videofps;
   public:
     void Init(VideoFromat &VideoFormat, char *FileName, char *Udp, int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0)
     {
         CurrentVideoFormat = VideoFormat;
         DelayPTS = SetDelayPts;
         // configuring camera
-
+        Videofps=fps;
         camera.setVideoFromat(VideoFormat, VideoPreview);
 
         camera.setImageDefaults();
@@ -3140,16 +3140,16 @@ class CameraTots
             }
 
             //#ifdef nextaac
-            static int TimeAudio=0;
-            
-            while(TimeAudio<key_frame*40000)//fixme 40 depend framerate
+            static float TimeAudio=0.0;
+            float VideoFrameDuration=1.0/(float)Videofps;
+            while(TimeAudio<key_frame*VideoFrameDuration)//fixme 40 depend framerate
             {
                 //fprintf(stderr,"TimeAudio %d keyframe %lld\n",TimeAudio,key_frame*40000);
                 if (audioencoder.EncodeFrame())
                 {
                         
                             tsencoder.AddAudioFrame(audioencoder.EncodedFrame , audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
-                            TimeAudio+=2048*1e6/48000;                
+                            TimeAudio+=2048.0/48000.0;                
                    
                 }
                 else
@@ -3614,16 +3614,16 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
             encBuffer.setFilled(false);
             //PictureBuffer.setFilled(true);
             encoder.callFillThisBuffer();
-             static int TimeAudio=0;
-            
-            while(TimeAudio<key_frame*40000)//fixme 40 depend framerate
+             static float TimeAudio=0.0;
+            float VideoFrameDuration=1.0/(float)Videofps;
+            while(TimeAudio<key_frame*VideoFrameDuration)//fixme 40 depend framerate
             {
                 //fprintf(stderr,"TimeAudio %d keyframe %lld\n",TimeAudio,key_frame*40000);
                 if (audioencoder.EncodeFrame())
                 {
                         
                             tsencoder.AddAudioFrame(audioencoder.EncodedFrame , audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
-                            TimeAudio+=2048*1e6/48000;                
+                            TimeAudio+=2048.0/48000.0;                
                    
                 }
                 else
