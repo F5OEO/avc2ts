@@ -26,7 +26,8 @@
 #include <IL/OMX_Video.h>
 #include <IL/OMX_Broadcom.h>
 
-extern "C" {
+extern "C"
+{
 #include "libmpegts/libmpegts.h"
 #include <fdk-aac/aacenc_lib.h>
 }
@@ -318,13 +319,14 @@ static void printEvent(const char *compName, OMX_HANDLETYPE hComponent, OMX_EVEN
     else
         fprintf(stderr, "%s (%p) 0x%08x, data: %d, %d\n", compName, hComponent, eEvent, nData1, nData2);
 }
-}
+} // namespace
 
 namespace broadcom
 {
 // TODO: add all
 
-typedef enum {
+typedef enum
+{
     VIDEO_SCHEDULER = 10,
     SOURCE = 20,
     RESIZER = 60,
@@ -442,7 +444,7 @@ class VcosLock
   private:
     VcosSemaphore *sem_;
 };
-}
+} // namespace broadcom
 
 namespace rpi_omx
 {
@@ -546,7 +548,8 @@ class OMXExeption
 ///
 struct VideoFromat
 {
-    typedef enum {
+    typedef enum
+    {
         RATIO_4x3,
         RATIO_16x9
     } Ratio;
@@ -2174,7 +2177,7 @@ static OMX_ERRORTYPE callback_FillBufferDone(OMX_HANDLETYPE hComponent, OMX_PTR 
 
     return OMX_ErrorNone;
 }
-}
+} // namespace rpi_omx
 
 // Global variable used by the signal handler and capture/encoding loop
 static int want_quit = 0;
@@ -2293,7 +2296,7 @@ class TSEncaspulator
             ts_stream[1].audio_type = LIBMPEGTS_AUDIO_SERVICE_UNDEFINED;
             //audio_frame_size - size of one audio frame in 90KHz ticks. (e.g. for ac3 1536 * 90000/samplerate )
             //stream->audio_frame_size = (double)encoder->num_samples * 90000LL * output_stream->ts_opts.frames_per_pes / input_stream->sample_rate;
-            ts_stream[1].audio_frame_size =2048*2*90000/48000 ; // To be calculated from bitrate : fixme !
+            ts_stream[1].audio_frame_size = 2048 * 2 * 90000 / 48000; // To be calculated from bitrate : fixme !
         }
         ts_setup_transport_stream(writer, &tsmain);
         ts_setup_sdt(writer);
@@ -2305,7 +2308,7 @@ class TSEncaspulator
                                   Videofps);
         if (IsAudioPresent == 1)
         {
-            ts_setup_mpeg4_aac_stream(writer, AudioPid, /*LIBMPEGTS_MPEG4_AAC_MAIN_PROFILE_LEVEL_2*/LIBMPEGTS_MPEG4_HE_AAC_V2_PROFILE_LEVEL_2, 2);
+            ts_setup_mpeg4_aac_stream(writer, AudioPid, /*LIBMPEGTS_MPEG4_AAC_MAIN_PROFILE_LEVEL_2*/ LIBMPEGTS_MPEG4_HE_AAC_V2_PROFILE_LEVEL_2, 2);
         }
         if (OutputFilename)
             vout = fopen(OutputFilename, "w+");
@@ -2530,7 +2533,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         //if(size<100) {printf("!");return;}
         static uint64_t AudioFrame = 0;
         ts_frame_t tsframe;
-        int ret;
+        
         //static float TimeToTransmitFrameUs=0;
         int len;
         double pts_increment;
@@ -2541,8 +2544,8 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         //pts_increment=(2048*90.0)/48.0;
         pts_increment = (2048 * 90.0 * 1000) / 48000.0;
         static int64_t OffsetFromVideo = 0;
-        
-		/*if(abs((key_frame-1)*FrameDuration*90-(AudioFrame*pts_increment+OffsetFromVideo))>200*90L)
+
+        /*if(abs((key_frame-1)*FrameDuration*90-(AudioFrame*pts_increment+OffsetFromVideo))>200*90L)
 		{
 				
 				OffsetFromVideo=(key_frame-1)*FrameDuration*90LL-AudioFrame*pts_increment;
@@ -2572,13 +2575,12 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         //tsframe.dts = vpts-DelayPTS*90L;
         //tsframe.pts = vpts;
 
-        tsframe.dts =pts_increment*AudioFrame+OffsetFromVideo+(DelayPTS-5)*90LL  ; // pts_increment*AudioFrame+DelayPTS*90L;
-        tsframe.pts = pts_increment*AudioFrame+OffsetFromVideo+DelayPTS*90LL;     //  pts_increment*AudioFrame+DelayPTS*90L;
+        tsframe.dts = pts_increment * AudioFrame + OffsetFromVideo + (DelayPTS - 5) * 90LL; // pts_increment*AudioFrame+DelayPTS*90L;
+        tsframe.pts = pts_increment * AudioFrame + OffsetFromVideo + DelayPTS * 90LL;       //  pts_increment*AudioFrame+DelayPTS*90L;
         //printf("Keyframe %lld Video dts=%lld,pts=%lld Audio Size = %d dts=%lld,pts=%lld\n",key_frame, vdts / 90, vpts / 90,size, tsframe.dts / 90, tsframe.pts / 90);
-        ret = ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
-
+        /*int ret =*/ ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
         
-			/*if ((ret==0)&&len)
+        /*if ((ret==0)&&len)
 			{
 				
 					printf("Audio First PCR=%lld, End=%lld\n",pcr_list[0]/27000LL-10000,pcr_list[(len/188)-1]/27000LL-10000);
@@ -2598,8 +2600,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
 			else
 			{
 				//fprintf(stderr, "audiotswrite frame Len=0 Ret=%d tsframe.size=%d originalsize=%d\n",ret,tsframe.size,size);
-			}*/	
-		
+			}*/
     }
 
     void udp_send(u_int8_t *b, int len)
@@ -2671,7 +2672,7 @@ class AudioEncoder
     HANDLE_AACENCODER hAacEncoder = NULL;
     int ErrorStatus;
     INT_PCM inputBuffer[2 * 2048];
-    INT_PCM SinBuffer[2*2048];
+    INT_PCM SinBuffer[2 * 2048];
     UCHAR outputbuffer[20480];
     AACENC_BufDesc inBufDesc;
 
@@ -2680,7 +2681,7 @@ class AudioEncoder
     int bitrate = 20000;
     AACENC_InfoStruct info = {0};
     AACENC_BufDesc outBufDesc;
-    FILE *AudioIn =NULL;
+    FILE *AudioIn = NULL;
 
   public:
     int FrameSize = 0;
@@ -2688,9 +2689,9 @@ class AudioEncoder
 
     AudioEncoder()
     {
-       
-        AudioIn= fopen("audioin.wav", "r+");
-        
+
+        AudioIn = fopen("audioin.wav", "r+");
+
         if ((ErrorStatus = aacEncOpen(&hAacEncoder, 0x0 /*HeAACv2 only*/, 2 /*Stereo*/)) != AACENC_OK)
         {
             fprintf(stderr, "Issue opening audio encoder\n");
@@ -2699,11 +2700,10 @@ class AudioEncoder
 
         for (int i = 0; i < 2048; i++)
         {
-            SinBuffer[i * 2] = 16000 *( sin(i * 468.75 *2*M_PI/ ((float)WavSampleRate)));
-            SinBuffer[i * 2 + 1] = 16000 * sin(i * 468.75 *2*M_PI / ((float)WavSampleRate));
-           
+            SinBuffer[i * 2] = 16000 * (sin(i * 468.75 * 2 * M_PI / ((float)WavSampleRate)));
+            SinBuffer[i * 2 + 1] = 16000 * sin(i * 468.75 * 2 * M_PI / ((float)WavSampleRate));
         }
-    memcpy(inputBuffer,SinBuffer,sizeof(inputBuffer));
+        memcpy(inputBuffer, SinBuffer, sizeof(inputBuffer));
         /*for (int i = 0; i < 1024*2; i++) {
 			//inputBuffer[i]=((SinBuffer[i]&0xFF)<<8)+((SinBuffer[i]&0xFF00)>>8);
             //inputBuffer[i]=SinBuffer[i*2]|(SinBuffer[i*2+1]<<8);
@@ -2745,10 +2745,11 @@ class AudioEncoder
             return;
         }
 
-        if (aacEncoder_SetParam(hAacEncoder, AACENC_AFTERBURNER, 1) != AACENC_OK) {
-		fprintf(stderr, "Unable to set the afterburner mode\n");
-		return ;
-	}
+        if (aacEncoder_SetParam(hAacEncoder, AACENC_AFTERBURNER, 1) != AACENC_OK)
+        {
+            fprintf(stderr, "Unable to set the afterburner mode\n");
+            return;
+        }
 
         if (aacEncEncode(hAacEncoder, NULL, NULL, NULL, NULL) != AACENC_OK)
         {
@@ -2763,7 +2764,7 @@ class AudioEncoder
         }
         else
         {
-            fprintf(stderr,"Info AudioCoder %d\n",info.frameLength);
+            fprintf(stderr, "Info AudioCoder %d\n", info.frameLength);
         }
     }
 
@@ -2777,29 +2778,29 @@ class AudioEncoder
 
     bool EncodeFrame(void)
     {
-         if(AudioIn!=NULL)
-         {   
-             int n=0;
-             int ret = ioctl(fileno(AudioIn), FIONREAD, &n);
-            if((ret<0)||(n<2048*2*2)) 
+        if (AudioIn != NULL)
+        {
+            int n = 0;
+            int ret = ioctl(fileno(AudioIn), FIONREAD, &n);
+            if ((ret < 0) || (n < 2048 * 2 * 2))
             {
-                memset(inputBuffer,0,sizeof(inputBuffer));
+                memset(inputBuffer, 0, sizeof(inputBuffer));
                 //memcpy(inputBuffer,SinBuffer,sizeof(inputBuffer));
-            }    
-            else    
-                ret = fread(inputBuffer, 2, 2048*2, AudioIn);
-         }
-         else
-            memcpy(inputBuffer,SinBuffer,sizeof(inputBuffer));
+            }
+            else
+                ret = fread(inputBuffer, 2, 2048 * 2, AudioIn);
+        }
+        else
+            memcpy(inputBuffer, SinBuffer, sizeof(inputBuffer));
         AACENC_ERROR err;
         AACENC_InArgs in_args = {0};
         AACENC_OutArgs out_args = {0};
-        in_args.numInSamples = 2048*2; //44100*40ms
+        in_args.numInSamples = 2048 * 2; //44100*40ms
 
         void *inBuffer[] = {inputBuffer};
         INT inBufferIds[] = {IN_AUDIO_DATA};
         INT inBufferSize[] = {sizeof(inputBuffer)};
-        INT inBufferElSize[] = {2};//{sizeof(INT_PCM)};
+        INT inBufferElSize[] = {2}; //{sizeof(INT_PCM)};
 
         void *outBuffer[] = {outputbuffer};
         INT outBufferIds[] = {OUT_BITSTREAM_DATA};
@@ -2829,20 +2830,19 @@ class AudioEncoder
         }
         if (out_args.numOutBytes == 0)
         {
-             fprintf(stderr,"Num sample eat %d\n",out_args.numInSamples);
+            fprintf(stderr, "Num sample eat %d\n", out_args.numInSamples);
             //fprintf(stderr,"Encoder -> %d\n",out_args.numOutBytes);
             return false;
         }
         else
         {
             //fprintf(stderr,"Encoder -> %d\n",out_args.numOutBytes);
-           
+
             EncodedFrame = outputbuffer; //To check
             FrameSize = out_args.numOutBytes;
-           
+
             return true;
         }
-       
     }
 };
 
@@ -2868,13 +2868,14 @@ class CameraTots
     int m_RowBySlice;
     AudioEncoder audioencoder;
     int Videofps;
+
   public:
     void Init(VideoFromat &VideoFormat, char *FileName, char *Udp, int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0)
     {
         CurrentVideoFormat = VideoFormat;
         DelayPTS = SetDelayPts;
         // configuring camera
-        Videofps=fps;
+        Videofps = fps;
         camera.setVideoFromat(VideoFormat, VideoPreview);
 
         camera.setImageDefaults();
@@ -3140,27 +3141,24 @@ class CameraTots
             }
 
             //#ifdef nextaac
-            static float TimeAudio=0.0;
-            float VideoFrameDuration=1.0/(float)Videofps;
-            while(TimeAudio<key_frame*VideoFrameDuration)//fixme 40 depend framerate
+            static float TimeAudio = 0.0;
+            float VideoFrameDuration = 1.0 / (float)Videofps;
+            while (TimeAudio < key_frame * VideoFrameDuration) //fixme 40 depend framerate
             {
                 //fprintf(stderr,"TimeAudio %d keyframe %lld\n",TimeAudio,key_frame*40000);
                 if (audioencoder.EncodeFrame())
                 {
-                        
-                            tsencoder.AddAudioFrame(audioencoder.EncodedFrame , audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
-                            TimeAudio+=2048.0/48000.0;                
-                   
+
+                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
+                    TimeAudio += 2048.0 / 48000.0;
                 }
                 else
-                    fprintf(stderr,"incomplete\n");
-                
-                
+                    fprintf(stderr, "incomplete\n");
             }
             //#endif
         }
-            //===== test Audio =====
-            //#define WITH_AUDIO 1
+        //===== test Audio =====
+        //#define WITH_AUDIO 1
 
         usleep(1000);
     }
@@ -3251,6 +3249,7 @@ class PictureTots
     struct timespec InitTime;
     FILE *AudioIn = NULL;
     AudioEncoder audioencoder;
+
   public:
     static const int Mode_PATTERN = 0;
     static const int Mode_V4L2 = 1;
@@ -3614,22 +3613,19 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
             encBuffer.setFilled(false);
             //PictureBuffer.setFilled(true);
             encoder.callFillThisBuffer();
-             static float TimeAudio=0.0;
-            float VideoFrameDuration=1.0/(float)Videofps;
-            while(TimeAudio<key_frame*VideoFrameDuration)//fixme 40 depend framerate
+            static float TimeAudio = 0.0;
+            float VideoFrameDuration = 1.0 / (float)Videofps;
+            while (TimeAudio < key_frame * VideoFrameDuration) //fixme 40 depend framerate
             {
                 //fprintf(stderr,"TimeAudio %d keyframe %lld\n",TimeAudio,key_frame*40000);
                 if (audioencoder.EncodeFrame())
                 {
-                        
-                            tsencoder.AddAudioFrame(audioencoder.EncodedFrame , audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
-                            TimeAudio+=2048.0/48000.0;                
-                   
+
+                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
+                    TimeAudio += 2048.0 / 48000.0;
                 }
                 else
-                    fprintf(stderr,"incomplete\n");
-                
-                
+                    fprintf(stderr, "incomplete\n");
             }
             return;
         }
@@ -3822,7 +3818,7 @@ int main(int argc, char **argv)
     int EnableMotionVectors = 0;
     char *ExtraArg = NULL;
     char *sdt = "F5OEO";
-    int pidpmt = 255, pidvideo = 256, pidaudio = 257;
+    int pidpmt = 255;//, pidvideo = 256, pidaudio = 257;
 
 #define CAMERA 0
 #define PATTERN 1
@@ -3896,8 +3892,8 @@ int main(int argc, char **argv)
             break;
         case 'p': //Pid Start
             pidpmt = atoi(optarg);
-            pidvideo = atoi(optarg) + 1;
-            pidaudio = atoi(optarg) + 2;
+            //pidvideo = atoi(optarg) + 1;
+            //pidaudio = atoi(optarg) + 2;
             break;
         case 's': //Service sname : sdt
             sdt = optarg;

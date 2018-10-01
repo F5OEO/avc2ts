@@ -7,38 +7,33 @@ extern "C"
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <libavdevice/avdevice.h>
-
 }
 
+class ffmpegsrc
+{
 
-class ffmpegsrc {
-
-public:
-    ffmpegsrc(const std::string& source = "/dev/video0");
+  public:
+    ffmpegsrc(const std::string &source = "/dev/video0");
 
     ~ffmpegsrc();
 
-    void GetVideoSize(int& Width,int& Height);
+    void GetVideoSize(int &Width, int &Height);
 
-    void SetOmxBuffer(unsigned char* Buffer);
+    void SetOmxBuffer(unsigned char *Buffer);
     bool read_frame(int timeout);
-    
 
-private:
-  
+  private:
     void open_device();
     void close_device();
 
-    
-
     std::string source;
-      
+
     AVFormatContext *format_ctx;
-	AVCodecContext *codec_ctx;
+    AVCodecContext *codec_ctx;
     struct SwsContext *sws_ctx;
-	AVFrame *frame;
+    AVFrame *frame;
     AVFrame *framey420;
-	uint8_t *OmxBuffer = NULL;
-	int video_stream;
+    uint8_t *OmxBuffer = NULL;
+    int video_stream;
     int len;
 };
