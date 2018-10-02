@@ -2638,22 +2638,39 @@ coded_frame->random_access = 1; // Every frame output is a random access point
 
     void udp_set_ip(char *ip)
     {
-        char text[40];
-        char *add[2];
+        char text[100];
+        char *add[3];
+        char interface[40];
         u_int16_t sock;
-
+        
         strcpy(text, ip);
         add[0] = strtok(text, ":");
         add[1] = strtok(NULL, ":");
-        if (strlen(add[1]) == 0)
+        add[2] = strtok(NULL, ":");
+        if (add[1] == NULL)
             sock = 1314;
         else
             sock = atoi(add[1]);
+        if(add[2]==NULL)
+        {
+           strcpy(interface,"0.0.0.0");      
+        }
+        else
+        {
+          strcpy(interface,add[2]);  
+        }
+
         // Construct the client sockaddr_in structure
         memset(&m_client, 0, sizeof(m_client));       // Clear struct
         m_client.sin_family = AF_INET;                // Internet/IP
         m_client.sin_addr.s_addr = inet_addr(add[0]); // IP address
         m_client.sin_port = htons(sock);              // server socket
+        
+        in_addr_t localadapter = inet_addr(interface);
+        setsockopt(m_sock, IPPROTO_IP, IP_MULTICAST_IF, (char*)&localadapter, sizeof(localadapter));
+        //in_addr interface_addr;
+        //interface_addr = inet_addr("192.168.1.71");
+        //setsockopt (m_sock, IPPROTO_IP, IP_MULTICAST_IF, &interface_addr, sizeof(interface_addr));
     }
     void udp_init(void)
     {
@@ -2863,7 +2880,7 @@ class CameraTots
     VideoFromat CurrentVideoFormat;
     int DelayPTS;
     struct timespec InitTime;
-    FILE *AudioIn = NULL;
+    
     bool VideoPreview = true;
     int m_IDRPeriod = 0;
     int m_RowBySlice;
@@ -2883,7 +2900,7 @@ class CameraTots
         camera.getSensorModes();
         camera.getSensorCameraMode();
         camera.setImageFilter(OMX_ALL, OMX_ImageFilterNoise);
-        AudioIn = fopen("tone440.aac", "r+");
+        
         while (!camera.ready())
         {
             std::cerr << "waiting for camera..." << std::endl;
@@ -3248,7 +3265,7 @@ class PictureTots
     VncClient *pvncclient;
     ffmpegsrc *pffmpeg;
     struct timespec InitTime;
-    FILE *AudioIn = NULL;
+    
     AudioEncoder audioencoder;
 
   public:
@@ -3268,7 +3285,7 @@ class PictureTots
         DelayPTS = SetDelayPts;
         EncVideoBitrate = VideoBitrate;
         Mode = ModeInput;
-        AudioIn = fopen("/home/pi/rpidatv/scripts/output.aac", "r+");
+        
         if (Mode == Mode_V4L2)
         {
             pwebcam = new Webcam(Extra);
@@ -3401,7 +3418,7 @@ class PictureTots
 
     void usleep_exactly(long MuToSleep)
     {
-#define KERNEL_GRANULARITY 1000000
+#define KERNEL_GRANULARITY 500000
 #define MARGIN 500
         struct timespec gettime_now;
         long time_difference;
@@ -3413,7 +3430,7 @@ class PictureTots
             time_difference += 1E9;
 
         long BigToSleepns = (MuToSleep * 1000L - time_difference - KERNEL_GRANULARITY);
-        //printf("ToSleep %ld\n",BigToSleepns/1000);
+       // printf("ToSleep %ld\n",BigToSleepns/1000);
         if (BigToSleepns < KERNEL_GRANULARITY)
         {
             last_time = gettime_now;
@@ -3447,7 +3464,7 @@ class PictureTots
             for (i = 0; i < CurrentVideoFormat.width; i++)
             {
                 //int z = (((i + frame) >> 4) ^ ((j + frame) >> 4)) & 15;
-                py[0] = rand() % 256;
+                py[0] = i % 256;
                 py++;
             }
         }
@@ -3643,7 +3660,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
             if (Mode == Mode_PATTERN)
             {
                 generate_test_card(PictureBuffer.data(), &filledLen, key_frame);
-
+                //generate_test_rgbcard(PictureBuffer.data(), &filledLen, key_frame);
                 usleep_exactly(1e6 / Videofps);
             }
             if (Mode == Mode_V4L2)
@@ -3789,7 +3806,7 @@ Usage:\nrpi-avc2ts  -o OutputFile -b BitrateVideo -m BitrateMux -x VideoWidth  -
 -x            VideoWidth (should be 16 pixel VideoPreviewed)\n\
 -y 	      VideoHeight (should be 16 pixel aligned)\n\
 -f            Framerate (25 for example)\n\
--n 	      Multicast group (optionnal) example 230.0.0.1:10000\n\
+-n 	      Multicast group:port:[interface] (optionnal) example 230.0.0.1:10000 or 230.0.0.1:10000:192.168.1.1\n\
 -d 	      Delay PTS/PCR in ms\n\
 -v	      Enable Motion vectors\n\
 -i	      IDR Period\n\
