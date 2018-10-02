@@ -2545,12 +2545,13 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         pts_increment = (2048 * 90.0 * 1000) / 48000.0;
         static int64_t OffsetFromVideo = 0;
 
-        /*if(abs((key_frame-1)*FrameDuration*90-(AudioFrame*pts_increment+OffsetFromVideo))>200*90L)
+        if(abs(vpts-(AudioFrame*pts_increment+OffsetFromVideo))>400*90L)
 		{
 				
-				OffsetFromVideo=(key_frame-1)*FrameDuration*90LL-AudioFrame*pts_increment;
-				printf("===========   Audio Drift %lld Correction =%lld\n",(int64_t)(key_frame*FrameDuration*90-(int64_t)AudioFrame*pts_increment+OffsetFromVideo)/90,OffsetFromVideo/90LL);
-		}*/
+				
+				printf("===========   Audio Drift %lld Correction =%lld\n",abs(vpts-(AudioFrame*pts_increment+OffsetFromVideo))/90L,OffsetFromVideo/90LL);
+                OffsetFromVideo=vpts-AudioFrame*pts_increment;
+		}
         /*
         if(Time==NULL)//Frame base calculation
 			{
@@ -3140,12 +3141,12 @@ class CameraTots
                 return; //We surely have an other buffer : get it immediately
             }
 
-            //#ifdef nextaac
+            // *********** AUDIO ******************
             static float TimeAudio = 0.0;
-            float VideoFrameDuration = 1.0 / (float)Videofps;
-            while (TimeAudio < key_frame * VideoFrameDuration) //fixme 40 depend framerate
+            //float VideoFrameDuration = 1.0 / (float)Videofps;
+            while (TimeAudio < tsencoder.vpts/90000.0) //fixme 40 depend framerate
             {
-                //fprintf(stderr,"TimeAudio %d keyframe %lld\n",TimeAudio,key_frame*40000);
+                //fprintf(stderr,"TimeAudio %f keyframe %f\n",TimeAudio,tsencoder.vpts/90000.0);
                 if (audioencoder.EncodeFrame())
                 {
 
@@ -3155,7 +3156,7 @@ class CameraTots
                 else
                     fprintf(stderr, "incomplete\n");
             }
-            //#endif
+            
         }
         //===== test Audio =====
         //#define WITH_AUDIO 1
@@ -3609,15 +3610,13 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                 printf("!%ld\n", key_frame);
             }
 
-            // Buffer flushed, request a new buffer to be filled by the encoder component
-            encBuffer.setFilled(false);
-            //PictureBuffer.setFilled(true);
-            encoder.callFillThisBuffer();
+
+            // *********** AUDIO ******************
             static float TimeAudio = 0.0;
-            float VideoFrameDuration = 1.0 / (float)Videofps;
-            while (TimeAudio < key_frame * VideoFrameDuration) //fixme 40 depend framerate
+            //float VideoFrameDuration = 1.0 / (float)Videofps;
+            while (TimeAudio < tsencoder.vpts/90000.0) //fixme 40 depend framerate
             {
-                //fprintf(stderr,"TimeAudio %d keyframe %lld\n",TimeAudio,key_frame*40000);
+                //fprintf(stderr,"TimeAudio %f keyframe %f\n",TimeAudio,tsencoder.vpts/90000.0);
                 if (audioencoder.EncodeFrame())
                 {
 
@@ -3627,6 +3626,13 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                 else
                     fprintf(stderr, "incomplete\n");
             }
+            // Buffer flushed, request a new buffer to be filled by the encoder component
+            encBuffer.setFilled(false);
+            //PictureBuffer.setFilled(true);
+            encoder.callFillThisBuffer();
+
+            
+            
             return;
         }
         if (!want_quit && (FirstTime || PictureBuffer.filled()))
