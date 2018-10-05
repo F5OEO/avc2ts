@@ -3167,7 +3167,7 @@ class CameraTots
                 if (audioencoder.EncodeFrame())
                 {
 
-                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
+                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS /*,&gettime_now*/);
                     TimeAudio += 2048.0 / 48000.0;
                 }
                 else
@@ -3637,7 +3637,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                 if (audioencoder.EncodeFrame())
                 {
 
-                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
+                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS /*,&gettime_now*/);
                     TimeAudio += 2048.0 / 48000.0;
                 }
                 else
