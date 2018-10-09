@@ -1330,6 +1330,19 @@ class Encoder : public Component
         ERR_OMX(OMX_SetParameter(component_, OMX_IndexParamVideoBitrate, &brate), "set bitrate");
     }
 
+    void setVuiParameters(int PixelX,int PixelY)
+    {
+        //Allowed values are: 1:1, 10:11, 16:11, 40:33, 59:54, and 118:81.
+        Parameter<OMX_CONFIG_POINTTYPE> PixelAspect;
+        PixelAspect->nPortIndex=OPORT;
+        PixelAspect->nX=PixelX;
+        PixelAspect->nY=PixelY;
+         ERR_OMX(OMX_SetParameter(component_, OMX_IndexParamBrcmPixelAspectRatio, &PixelAspect), "set Aspext Pixel");
+
+        
+
+    }
+
     void setLevelExtension(int BitrateMaxKbps)
     {
         /*
@@ -2949,7 +2962,7 @@ class CameraTots
             encoder.setSeparateNAL();
             m_RowBySlice = RowBySlice;
             encoder.setMinizeFragmentation(); // Minimize frag seems to block at high resolution : to inspect*/
-
+            encoder.setVuiParameters(1,1); //PixelAspect
             if (RowBySlice)
                 encoder.setMultiSlice(RowBySlice, OMX_VIDEO_IntraRefreshCyclic /*OMX_VIDEO_IntraRefreshBoth*/);
 
@@ -3350,7 +3363,7 @@ class PictureTots
         encoder.setLowLatency();
         //encoder.setSeparateNAL();
         encoder.setMinizeFragmentation(); // Minimize frag seems to block at high resolution : to inspect*/
-
+        encoder.setVuiParameters(1,1); //PixelAspect
         if (RowBySlice)
             encoder.setMultiSlice(RowBySlice, OMX_VIDEO_IntraRefreshCyclic /*OMX_VIDEO_IntraRefreshBoth*/);
 
