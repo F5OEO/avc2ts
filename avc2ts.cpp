@@ -3431,8 +3431,8 @@ class PictureTots
 
     void usleep_exactly(long MuToSleep)
     {
-#define KERNEL_GRANULARITY 500000
-#define MARGIN 500
+#define KERNEL_GRANULARITY 180000
+#define MARGIN 5000
         struct timespec gettime_now;
         long time_difference;
         if (last_time.tv_sec == 0)
@@ -3443,10 +3443,11 @@ class PictureTots
             time_difference += 1E9;
 
         long BigToSleepns = (MuToSleep * 1000L - time_difference - KERNEL_GRANULARITY);
-       // printf("ToSleep %ld\n",BigToSleepns/1000);
+        //printf("ToSleep %ld\n",BigToSleepns/1000);
         if (BigToSleepns < KERNEL_GRANULARITY)
         {
             last_time = gettime_now;
+            printf("I am late %ld\n",BigToSleepns);
             return;
         }
 
