@@ -3633,6 +3633,23 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                 }
 
                 tsencoder.AddFrame(encBuffer.data(), encBuffer.dataSize(), OmxFlags, key_frame, DelayPTS /*,&gettime_now*/);
+
+                //Now Audio
+                // *********** AUDIO ******************
+                static float TimeAudio = 0.0;
+                //float VideoFrameDuration = 1.0 / (float)Videofps;
+                while (TimeAudio < tsencoder.vpts/90000.0) //fixme 40 depend framerate
+                {
+                    //fprintf(stderr,"TimeAudio %f keyframe %f\n",TimeAudio,tsencoder.vpts/90000.0);
+                    if (audioencoder.EncodeFrame())
+                    {
+
+                        tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS /*,&gettime_now*/);
+                        TimeAudio += 2048.0 / 48000.0;
+                    }
+                    else
+                        fprintf(stderr, "incomplete\n");
+                }
             }
             else
             {
@@ -3642,21 +3659,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
             }
 
 
-            // *********** AUDIO ******************
-            static float TimeAudio = 0.0;
-            //float VideoFrameDuration = 1.0 / (float)Videofps;
-            while (TimeAudio < tsencoder.vpts/90000.0) //fixme 40 depend framerate
-            {
-                //fprintf(stderr,"TimeAudio %f keyframe %f\n",TimeAudio,tsencoder.vpts/90000.0);
-                if (audioencoder.EncodeFrame())
-                {
-
-                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS /*,&gettime_now*/);
-                    TimeAudio += 2048.0 / 48000.0;
-                }
-                else
-                    fprintf(stderr, "incomplete\n");
-            }
+            
             // Buffer flushed, request a new buffer to be filled by the encoder component
             encBuffer.setFilled(false);
             //PictureBuffer.setFilled(true);
