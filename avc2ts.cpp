@@ -931,6 +931,75 @@ class Component
 #endif
 };
 
+
+// H264 Decoder
+class Decoder : public Component
+{
+  public:
+    static const ComponentType cType = broadcom::VIDEO_DECODER;
+
+    static const unsigned IPORT = 130;
+    static const unsigned OPRT = 131;
+    
+
+    
+    static int32_t align(unsigned x, unsigned y)
+    {
+        return (x + y - 1) & (~(y - 1));
+    }
+
+    Decoder()
+        : Component(cType, (OMX_PTR)this, &cbsEvents),
+          ready_(false)
+    {
+        requestCallback();
+       
+    }
+
+    void SetCodec()
+    {
+         Parameter<OMX_PARAM_PORTDEFINITIONTYPE> portDef;
+         getPortDefinition(IPORT,portDef);
+        portDef->format.video.eCompressionFormat = OMX_VIDEO_CodingAVC;
+        setPortDefinition(IPORT, portDef);
+
+    }
+
+    
+    void requestCallback()
+    {
+        Parameter<OMX_CONFIG_REQUESTCALLBACKTYPE> cbtype;
+        cbtype->nPortIndex = OMX_ALL;
+        cbtype->nIndex = OMX_IndexParamCameraDeviceNumber;
+        cbtype->bEnable = OMX_TRUE;
+
+        ERR_OMX(OMX_SetConfig(component_, OMX_IndexConfigRequestCallback, &cbtype), "request callbacks");
+    }
+
+    void allocBuffers()
+    {
+        Component::allocBuffers(IPORT, bufferIn_);
+    }
+
+    void freeBuffers()
+    {
+        Component::freeBuffers(IPORT, bufferIn_);
+    }
+
+    bool ready() const { return ready_; }
+
+    void eventReady()
+    {
+        Lock lock(pSemaphore); // LOCK
+
+        ready_ = true;
+    }
+
+  private:
+    Buffer bufferIn_;
+    bool ready_;
+};  
+
 /// Raspberry Pi Camera Module
 class Camera : public Component
 {
@@ -2879,6 +2948,79 @@ class AudioEncoder
 
 using namespace rpi_omx;
 
+class H264tots
+{
+    #define MAX_PIC_SIZE 512000
+    private:
+    TSEncaspulator tsencoder;
+    FILE *h264file=NULL;
+    uint8_t *esBuffer=NULL;
+    size_t Offset=0;
+    int key_frame=1;
+    int Videofps;
+    int DelayPTS ;
+    public:
+    void Init(char *InputFile,char *FileName, char *Udp,int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0)
+    {
+        h264file = fopen(InputFile, "r+");
+        if(h264file==NULL) fprintf(stderr,"Error opening h264 inputfile\n");
+        tsencoder.SetOutput(FileName, Udp);
+        tsencoder.ConstructTsTree(VideoBitrate, TsBitrate, PMTPid, sdt, fps, 0);
+        esBuffer=(uint8_t*)malloc(MAX_PIC_SIZE);
+        DelayPTS = SetDelayPts;
+        Videofps=fps;
+    }
+
+    void Run(bool want_quit)
+    {
+        bool EsNotCompleted=true;
+        
+        size_t n=fread(&esBuffer[Offset],1,1000,h264file);
+        Offset+=n;
+        
+            
+        while(EsNotCompleted)
+        {
+            
+            
+            //if(n!=0)   fprintf(stderr,"Offset=%d\n",Offset);
+            if(Offset<5) {sleep(1);return;}
+            size_t i;
+            for(i=3;i<Offset;i++)
+            {
+                if((esBuffer[i]==0)&&(esBuffer[i+1]==0)&&(esBuffer[i+2]==0x1)/*&&(esBuffer[i+3]==0x21)*/)
+                {
+                   //fprintf(stderr,"Frame %d,Size=%d Type%x\n",key_frame,i,esBuffer[i+3]); 
+                   if((esBuffer[3]==0x21)||(esBuffer[3]==0x25))
+                   {
+                    tsencoder.AddFrame(esBuffer,i, OMX_BUFFERFLAG_ENDOFFRAME, key_frame++, DelayPTS); 
+                   }
+                   else
+                    {
+                        tsencoder.AddFrame(esBuffer,i, OMX_BUFFERFLAG_CODECCONFIG, key_frame, DelayPTS); 
+                    }
+                   
+                   memmove(esBuffer,esBuffer+i,Offset-i);
+                   Offset=Offset-i;
+                   break;
+                }
+            }
+            if(i==Offset) EsNotCompleted=false;
+
+        }
+
+        
+        
+    }        
+
+    void Terminate()
+    {
+        fclose(h264file);
+        free(esBuffer);
+    }    
+};
+
+
 class CameraTots
 {
   private:
@@ -3361,7 +3503,7 @@ class PictureTots
         //encoder.setQPLimits(20,25);
         //encoder.setQP(20,20);
         encoder.setLowLatency();
-        //encoder.setSeparateNAL();
+        encoder.setSeparateNAL();
         encoder.setMinizeFragmentation(); // Minimize frag seems to block at high resolution : to inspect*/
         encoder.setVuiParameters(1,1); //PixelAspect
         if (RowBySlice)
@@ -3692,8 +3834,18 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
             }
             if (Mode == Mode_GRABDISPLAY)
             {
+                struct timespec gettime_now,first_time;
+				long time_difference;
+				clock_gettime(CLOCK_REALTIME, &first_time);
+					
+				pgrabdisplay->GetPicture();
+				clock_gettime(CLOCK_REALTIME, &gettime_now);
+				time_difference = gettime_now.tv_nsec - first_time.tv_nsec;
+				if (time_difference < 0)
+					time_difference += 1E9;
+				printf("Grab time=%ld us\n",time_difference/1000);
 
-                pgrabdisplay->GetPicture();
+               
                 int DisplayWidth, DisplayHeight, Rotate;
 
                 pgrabdisplay->GetDisplaySize(DisplayWidth, DisplayHeight, Rotate);
@@ -3866,6 +4018,7 @@ int main(int argc, char **argv)
 #define DISPLAY 3
 #define VNC 4
 #define FFMPEG 5
+#define H264IN 6
     int TypeInput = CAMERA;
 
     while (1)
@@ -3996,26 +4149,31 @@ else
 
         CameraTots *cameratots = NULL;
         PictureTots *picturetots = NULL;
-        if (TypeInput == 0)
-        {
-            cameratots = new CameraTots;
-            cameratots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors);
-        }
-        else
-        {
+        H264tots *h264tots = NULL;
+                  
             int PictureMode = PictureTots::Mode_PATTERN;
             switch (TypeInput)
             {
+                case 0:
+                cameratots = new CameraTots;
+                cameratots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors);
+                break;
             case PATTERN:
                 PictureMode = PictureTots::Mode_PATTERN;
+                picturetots = new PictureTots;
+                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg);
                 break;
             case USB_CAMERA:
                 PictureMode = PictureTots::Mode_V4L2;
                 if (ExtraArg == NULL)
                     ExtraArg = "/dev/video0";
+                picturetots = new PictureTots;
+                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg);    
                 break;
             case DISPLAY:
                 PictureMode = PictureTots::Mode_GRABDISPLAY;
+                picturetots = new PictureTots;
+                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg);
                 break;
             case VNC:
                 PictureMode = PictureTots::Mode_VNCCLIENT;
@@ -4024,13 +4182,21 @@ else
                     printf("IP of VNCServer should be set with -e option\n");
                     exit(0);
                 }
+                picturetots = new PictureTots;
+                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg);
                 break;
             case FFMPEG:
                 PictureMode = PictureTots::Mode_FFMPEG;
+                picturetots = new PictureTots;
+                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg);
+            break;
+            case H264IN:
+            h264tots = new H264tots;
+            h264tots->Init("transcode.264", OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice);
+            break;    
             }
-            picturetots = new PictureTots;
-            picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg);
-        }
+            
+        
 #if 1
         signal(SIGINT, signal_handler);
         signal(SIGTERM, signal_handler);
@@ -4044,11 +4210,11 @@ else
         while (1)
         {
 
-            if (TypeInput == 0)
-                cameratots->Run(want_quit);
-            else
-                picturetots->Run(want_quit);
+            if (TypeInput == 0) cameratots->Run(want_quit);
+            
+            if((TypeInput>=PATTERN)&&(TypeInput<=FFMPEG))    picturetots->Run(want_quit);
 
+            if(TypeInput==H264IN)    h264tots->Run(want_quit);
             if (want_quit /*&& (encBufferLow.flags() & OMX_BUFFERFLAG_SYNCFRAME)*/)
             {
                 std::cerr << "Clean Exiting avc2ts" << std::endl;
@@ -4069,11 +4235,17 @@ else
             cameratots->Terminate();
             delete (cameratots);
         }
-        else
+       if((TypeInput>=PATTERN)&&(TypeInput<=FFMPEG))
         {
             picturetots->Terminate();
             delete (picturetots);
         }
+        if(TypeInput==H264IN)
+        {
+            h264tots->Terminate();
+            delete (h264tots);
+        }
+
     }
     catch (const OMXExeption &e)
     {
