@@ -464,7 +464,7 @@ int Webcam::ConvertColor(unsigned char *out, unsigned char *in)
     unsigned char *PlanU = out + yuv420frame.width * yuv420frame.height;
     unsigned char *PlanV = PlanU + (yuv420frame.width * yuv420frame.height) / 4;
 
-    //printf("WidthMissin %d\n",WidthMissing);
+    //fprintf(stderr,"WidthMissin %d\n",WidthMissing);
     switch (fmt.fmt.pix.pixelformat)
     {
     case V4L2_PIX_FMT_UYVY:
@@ -506,7 +506,7 @@ int Webcam::ConvertColor(unsigned char *out, unsigned char *in)
         break;
     }
     return 0;
-    //printf("Count =%d\n",count);
+    //fprintf(stderr,"Count =%d\n",count);
 }
 
 /*******************************************************************/
@@ -573,7 +573,7 @@ const YUV420Image &Webcam::frame(int timeout)
 
         if (0 == r)
         {
-            printf("Timeout\n");
+            fprintf(stderr,"Timeout\n");
             throw runtime_error(device + ": select timeout");
         }
 
@@ -585,7 +585,7 @@ const YUV420Image &Webcam::frame(int timeout)
             return yuv420frame;
         }
         else
-            printf("#");
+            fprintf(stderr,"#");
         /* EAGAIN - continue select loop. */
     }
 }
@@ -619,7 +619,7 @@ bool Webcam::read_frame()
     }
 
     assert(buf.index < n_buffers);
-    //printf("Image =%d/%d\n",buf.bytesused,buffers[buf.index].size);
+    //fprintf(stderr,"Image =%d/%d\n",buf.bytesused,buffers[buf.index].size);
     if (buf.bytesused == buffers[buf.index].size)
     {
         ConvertColor(yuv420frame.data, (unsigned char *)buffers[buf.index].data);
@@ -677,7 +677,7 @@ void Webcam::init_mmap(void)
             throw runtime_error("VIDIOC_REQBUFS");
         }
     }
-    printf("%d buffers for Video\n", req.count);
+    fprintf(stderr,"%d buffers for Video\n", req.count);
     if (req.count < 2)
     {
         throw runtime_error(string("Insufficient buffer memory on ") + device);
@@ -817,13 +817,13 @@ void Webcam::init_device(void)
         switch (fmt.fmt.pix.pixelformat)
         {
         case V4L2_PIX_FMT_UYVY:
-            printf("Video Format UYVY supported\n");
+            fprintf(stderr,"Video Format UYVY supported\n");
             break;
         case V4L2_PIX_FMT_YUYV:
-            printf("Video Format YUYV supported\n");
+            fprintf(stderr,"Video Format YUYV supported\n");
             break;
         default:
-            printf("Video Format %d NOT IMPLENTED !!!!\n", fmt.fmt.pix.pixelformat);
+            fprintf(stderr,"Video Format %d NOT IMPLENTED !!!!\n", fmt.fmt.pix.pixelformat);
         }
     }
 

@@ -1080,7 +1080,7 @@ class Camera : public Component
         }
         else
         {
-            printf("Camera output used :  %d x %d Padding %d-%d Fps %d-%d\n", sensor->nWidth, sensor->nHeight, sensor->nPaddingRight, sensor->nPaddingDown, sensor->nFrameRateMin, sensor->nFrameRateMax);
+            fprintf(stderr,"Camera output used :  %d x %d Padding %d-%d Fps %d-%d\n", sensor->nWidth, sensor->nHeight, sensor->nPaddingRight, sensor->nPaddingDown, sensor->nFrameRateMin, sensor->nFrameRateMax);
         }
     }
 
@@ -1316,7 +1316,7 @@ class Encoder : public Component
         portDef->format.video.nBitrate = bitrate;
         portDef->nBufferSize = 256000; //By default 65536, but increased for high resolution with big I pictures
                                        // printf("portDef->nBufferCountActual %d\n",portDef->nBufferCountActual);
-        printf("Video encoding format=%d x %d @ %d fps\n", portDef->format.video.nFrameWidth, portDef->format.video.nFrameHeight, portDef->format.video.xFramerate >> 16);
+        fprintf(stderr,"Video encoding format=%d x %d @ %d fps\n", portDef->format.video.nFrameWidth, portDef->format.video.nFrameHeight, portDef->format.video.xFramerate >> 16);
         //printf("FPS from camera=%x\n",cameraPortDef->format.video.xFramerate);
         if (framerate)
             portDef->format.video.xFramerate = framerate << 16;
@@ -1362,7 +1362,7 @@ class Encoder : public Component
         portDef->format.video.xFramerate = framerate << 16;
         portDef->nBufferSize = 256000; //By default 65536, but increased for high resolution with big I pictures
                                        //printf("FPS from output=%x\n",portDef->format.video.xFramerate);
-        printf("Aligned = %d Stride= %d\n", portDef->nBufferAlignment, portDef->format.video.nStride);
+        fprintf(stderr,"Aligned = %d Stride= %d\n", portDef->nBufferAlignment, portDef->format.video.nStride);
         setPortDefinition(OPORT, portDef);
     }
 
@@ -1575,29 +1575,29 @@ LOW_LATENCY mode is not a mode intended for general use. There was a specific us
         AvcConfig->nPortIndex = OPORT;
 
         ERR_OMX(OMX_GetParameter(component_, OMX_IndexParamVideoAvc, &AvcConfig), "AVCCONFIG");
-        printf("AvcConfig->nSliceHeaderSpacing %d\n", AvcConfig->nSliceHeaderSpacing);
-        printf("AvcConfig->nPFrames %d\n", AvcConfig->nSliceHeaderSpacing);
-        printf("AvcConfig->nBFrames %d\n", AvcConfig->nBFrames);
-        printf("AvcConfig->bUseHadamard %d\n", AvcConfig->bUseHadamard);
-        printf("AvcConfig->nRefFrames %d\n", AvcConfig->nRefFrames);
-        printf("AvcConfig->nRefIdx10ActiveMinus1 %d\n", AvcConfig->nRefIdx10ActiveMinus1);
-        printf("AvcConfig->nRefIdx11ActiveMinus1 %d\n", AvcConfig->nRefIdx11ActiveMinus1);
-        printf("AvcConfig->bEnableUEP %d\n", AvcConfig->bEnableUEP);
-        printf("AvcConfig->bEnableFMO %d\n", AvcConfig->bEnableFMO);
-        printf("AvcConfig->bEnableASO %d\n", AvcConfig->bEnableASO);
-        printf("AvcConfig->bEnableRS %d\n", AvcConfig->bEnableRS);
+        fprintf(stderr,"AvcConfig->nSliceHeaderSpacing %d\n", AvcConfig->nSliceHeaderSpacing);
+        fprintf(stderr,"AvcConfig->nPFrames %d\n", AvcConfig->nSliceHeaderSpacing);
+        fprintf(stderr,"AvcConfig->nBFrames %d\n", AvcConfig->nBFrames);
+        fprintf(stderr,"AvcConfig->bUseHadamard %d\n", AvcConfig->bUseHadamard);
+        fprintf(stderr,"AvcConfig->nRefFrames %d\n", AvcConfig->nRefFrames);
+        fprintf(stderr,"AvcConfig->nRefIdx10ActiveMinus1 %d\n", AvcConfig->nRefIdx10ActiveMinus1);
+        fprintf(stderr,"AvcConfig->nRefIdx11ActiveMinus1 %d\n", AvcConfig->nRefIdx11ActiveMinus1);
+        fprintf(stderr,"AvcConfig->bEnableUEP %d\n", AvcConfig->bEnableUEP);
+        fprintf(stderr,"AvcConfig->bEnableFMO %d\n", AvcConfig->bEnableFMO);
+        fprintf(stderr,"AvcConfig->bEnableASO %d\n", AvcConfig->bEnableASO);
+        fprintf(stderr,"AvcConfig->bEnableRS %d\n", AvcConfig->bEnableRS);
         //OMX_VIDEO_AVCPROFILETYPE eProfile;
         //OMX_VIDEO_AVCLEVELTYPE eLevel;
-        printf("  AvcConfig->nAllowedPictureTypes %d\n", AvcConfig->nAllowedPictureTypes);
-        printf("	AvcConfig->bFrameMBsOnly %d\n", AvcConfig->bFrameMBsOnly);
-        printf(" AvcConfig->bMBAFF %d\n", AvcConfig->bMBAFF);
-        printf("AvcConfig->bEntropyCodingCABAC %d\n", AvcConfig->bEntropyCodingCABAC);
-        printf("AvcConfig->bWeightedPPrediction %d\n", AvcConfig->bWeightedPPrediction);
-        printf("AvcConfig->nWeightedBipredicitonMode %d\n", AvcConfig->nWeightedBipredicitonMode);
-        printf(" AvcConfig->bconstIpred  %d\n", AvcConfig->bconstIpred);
-        printf("AvcConfig->bDirect8x8Inference %d\n", AvcConfig->bDirect8x8Inference);
-        printf("AvcConfig->bDirectSpatialTemporal %d\n", AvcConfig->bDirectSpatialTemporal);
-        printf("AvcConfig->nCabacInitIdc %d\n", AvcConfig->nCabacInitIdc);
+        fprintf(stderr,"  AvcConfig->nAllowedPictureTypes %d\n", AvcConfig->nAllowedPictureTypes);
+        fprintf(stderr,"	AvcConfig->bFrameMBsOnly %d\n", AvcConfig->bFrameMBsOnly);
+        fprintf(stderr," AvcConfig->bMBAFF %d\n", AvcConfig->bMBAFF);
+        fprintf(stderr,"AvcConfig->bEntropyCodingCABAC %d\n", AvcConfig->bEntropyCodingCABAC);
+        fprintf(stderr,"AvcConfig->bWeightedPPrediction %d\n", AvcConfig->bWeightedPPrediction);
+        fprintf(stderr,"AvcConfig->nWeightedBipredicitonMode %d\n", AvcConfig->nWeightedBipredicitonMode);
+        fprintf(stderr," AvcConfig->bconstIpred  %d\n", AvcConfig->bconstIpred);
+        fprintf(stderr,"AvcConfig->bDirect8x8Inference %d\n", AvcConfig->bDirect8x8Inference);
+        fprintf(stderr,"AvcConfig->bDirectSpatialTemporal %d\n", AvcConfig->bDirectSpatialTemporal);
+        fprintf(stderr,"AvcConfig->nCabacInitIdc %d\n", AvcConfig->nCabacInitIdc);
         /* AvcConfig->nSliceHeaderSpacing;  
     AvcConfig->nPFrames;     
     AvcConfig->nBFrames;     
@@ -1709,7 +1709,7 @@ Set pQuantization defaults
         /*Parameter<OMX_VIDEO_PARAM_AVCSLICEFMO> MultiSliceMode; //NOT SUPPORTED !!!!!!!!
 		MultiSliceMode->nPortIndex=OPORT;
 		ERR_OMX( OMX_GetParameter(component_, OMX_IndexParamVideoSliceFMO, &MultiSliceMode)," Get SliceMode");
-		printf("Slice Mode %d %d %d \n",MultiSliceMode->eSliceMode,MultiSliceMode->nNumSliceGroups,MultiSliceMode->nSliceGroupMapType);
+		fprintf(stderr,"Slice Mode %d %d %d \n",MultiSliceMode->eSliceMode,MultiSliceMode->nNumSliceGroups,MultiSliceMode->nSliceGroupMapType);
 		//MultiSliceMode->eSliceMode = OMX_VIDEO_SLICEMODE_AVCByteSlice;
   		//MultiSliceMode->nNumSliceGroups = 0;
   		//MultiSliceMode->nSliceGroupMapType = 0;
@@ -1738,7 +1738,7 @@ Set pQuantization defaults
         Parameter<OMX_VIDEO_PARAM_INTRAREFRESHTYPE> IntraRefreshType;
         IntraRefreshType->nPortIndex = OPORT;
         ERR_OMX(OMX_GetParameter(component_, OMX_IndexParamVideoIntraRefresh, &IntraRefreshType), " IntraRefreshMode");
-        //printf("Refresh Mode %d nAirMBs %d nAirRef %d nCirMBs %d nPirMBs %d\n",IntraRefreshType->eRefreshMode,IntraRefreshType->nAirMBs,IntraRefreshType->nAirRef,IntraRefreshType->nCirMBs,IntraRefreshType->nPirMBs);
+        //fprintf(stderr,"Refresh Mode %d nAirMBs %d nAirRef %d nCirMBs %d nPirMBs %d\n",IntraRefreshType->eRefreshMode,IntraRefreshType->nAirMBs,IntraRefreshType->nAirRef,IntraRefreshType->nCirMBs,IntraRefreshType->nPirMBs);
 
         IntraRefreshType->eRefreshMode = Mode; //OMX_VIDEO_IntraRefreshCyclicMrows;
                                                //OMX_VIDEO_IntraRefreshPseudoRand --> CRASH ABOUT 5 econds
@@ -1819,29 +1819,29 @@ So the advice was for MMAL_VIDEO_INTRA_REFRESH_CYCLIC_MROWS and cir_mbs set prob
 
         Parameter<OMX_PARAM_U32TYPE> MemStat;
         ERR_OMX(OMX_GetParameter(component_, OMX_IndexConfigBrcmPoolMemAllocSize, &MemStat), " Get VideoStat");
-        printf("VideoStat -");
-        printf("%s", debug);
-        //printf("PoolMem %d ",MemStat);
-        //printf("nImageCount %d ",VideoStat->nImageCount);
-        printf("nBufferCount %d ", VideoStat->nBufferCount);
-        printf("nFrameCount %d ", VideoStat->nFrameCount);
-        printf("Diff %d ", VideoStat->nBufferCount - VideoStat->nFrameCount * 3 + NbCodecConfig);
+        fprintf(stderr,"VideoStat -");
+        fprintf(stderr,"%s", debug);
+        //fprintf(stderr,"PoolMem %d ",MemStat);
+        //fprintf(stderr,"nImageCount %d ",VideoStat->nImageCount);
+        fprintf(stderr,"nBufferCount %d ", VideoStat->nBufferCount);
+        fprintf(stderr,"nFrameCount %d ", VideoStat->nFrameCount);
+        fprintf(stderr,"Diff %d ", VideoStat->nBufferCount - VideoStat->nFrameCount * 3 + NbCodecConfig);
 
         if (VideoStat->nFrameSkips != 0)
-            printf("nFrameSkips %d ", VideoStat->nFrameSkips);
+            fprintf(stderr,"nFrameSkips %d ", VideoStat->nFrameSkips);
         if (VideoStat->nDiscards != 0)
-            printf("nDiscards %d ", VideoStat->nDiscards);
-        //        printf("nEOS %d ",VideoStat->nEOS);
-        //printf("nMaxFrameSize %d ",VideoStat->nMaxFrameSize);
-        printf("FrameSize %d (%d bits) -> %d kb/s", VideoStat->nByteCount.nLowPart - ByteCountBefore, (VideoStat->nByteCount.nLowPart - ByteCountBefore) * 8, ((VideoStat->nByteCount.nLowPart - ByteCountBefore) * 8 * 25) / 1000);
+            fprintf(stderr,"nDiscards %d ", VideoStat->nDiscards);
+        //        fprintf(stderr,"nEOS %d ",VideoStat->nEOS);
+        //fprintf(stderr,"nMaxFrameSize %d ",VideoStat->nMaxFrameSize);
+        fprintf(stderr,"FrameSize %d (%d bits) -> %d kb/s", VideoStat->nByteCount.nLowPart - ByteCountBefore, (VideoStat->nByteCount.nLowPart - ByteCountBefore) * 8, ((VideoStat->nByteCount.nLowPart - ByteCountBefore) * 8 * 25) / 1000);
         ByteCountBefore = VideoStat->nByteCount.nLowPart;
-        //printf("nByteCount %d:%d ",VideoStat->nByteCount.nHighPart,VideoStat->nByteCount.nLowPart);
-        //printf("nMaxTimeDelta %d:%d ",VideoStat->nMaxTimeDelta.nHighPart,VideoStat->nMaxTimeDelta.nLowPart);
-        //printf("nCorruptMBs %d ",VideoStat->nCorruptMBs);
-        printf("Time %d ", (t.tv_sec - tbefore.tv_sec) * 1000ul + (t.tv_nsec - tbefore.tv_nsec) / 1000000);
+        //fprintf(stderr,"nByteCount %d:%d ",VideoStat->nByteCount.nHighPart,VideoStat->nByteCount.nLowPart);
+        //fprintf(stderr,"nMaxTimeDelta %d:%d ",VideoStat->nMaxTimeDelta.nHighPart,VideoStat->nMaxTimeDelta.nLowPart);
+        //fprintf(stderr,"nCorruptMBs %d ",VideoStat->nCorruptMBs);
+        fprintf(stderr,"Time %d ", (t.tv_sec - tbefore.tv_sec) * 1000ul + (t.tv_nsec - tbefore.tv_nsec) / 1000000);
         //printf("Bitrate %d",(VideoStat->nByteCount.nLowPart*8L)/(((t.tv_sec-tinitial.tv_sec)>0)?(t.tv_sec-tinitial.tv_sec):1));
-        printf("\n");
-        /*	printf("VideoStat :Mem=%d ByteCount %d Buffer %d - Frame %d = %d Skip %d Discard %d Max Delta%d:%d TIME %li AverageBitrate=%d\n",MemStat,VideoStat->nByteCount.nLowPart,VideoStat->nBufferCount,VideoStat->nFrameCount,VideoStat->nBufferCount-VideoStat->nFrameCount*3,VideoStat->nFrameSkips,VideoStat->nDiscards,VideoStat->nMaxTimeDelta.nHighPart,VideoStat->nMaxTimeDelta.nLowPart,( t.tv_sec -tbefore.tv_sec  )*1000ul + ( t.tv_nsec - tbefore.tv_nsec)/1000000,(VideoStat->nByteCount.nLowPart*8L)/(((t.tv_sec-tinitial.tv_sec)>0)?(t.tv_sec-tinitial.tv_sec):1));*/
+        fprintf(stderr,"\n");
+        /*	fprintf(stderr,"VideoStat :Mem=%d ByteCount %d Buffer %d - Frame %d = %d Skip %d Discard %d Max Delta%d:%d TIME %li AverageBitrate=%d\n",MemStat,VideoStat->nByteCount.nLowPart,VideoStat->nBufferCount,VideoStat->nFrameCount,VideoStat->nBufferCount-VideoStat->nFrameCount*3,VideoStat->nFrameSkips,VideoStat->nDiscards,VideoStat->nMaxTimeDelta.nHighPart,VideoStat->nMaxTimeDelta.nLowPart,( t.tv_sec -tbefore.tv_sec  )*1000ul + ( t.tv_nsec - tbefore.tv_nsec)/1000000,(VideoStat->nByteCount.nLowPart*8L)/(((t.tv_sec-tinitial.tv_sec)>0)?(t.tv_sec-tinitial.tv_sec):1));*/
         tbefore = t;
         Count++;
     }
@@ -2004,7 +2004,7 @@ class Resizer : public Component
 
             portDefI->format.image.nStride = SrcImageWidth;
             portDefI->format.image.nSliceHeight = SrcImageHeight;
-            printf("%d * %d\n", portDefI->format.image.nStride, portDefI->format.image.nSliceHeight);
+            fprintf(stderr,"%d * %d\n", portDefI->format.image.nStride, portDefI->format.image.nSliceHeight);
         }
         else
         {
@@ -2090,7 +2090,7 @@ class ImageEncode : public Component
 
             portDefI->format.image.nStride = SrcImageWidth;
             portDefI->format.image.nSliceHeight = SrcImageHeight;
-            //printf("%d * %d\n",portDefI->format.image.nStride,portDefI->format.image.nSliceHeight);
+            //fprintf(stderr,"%d * %d\n",portDefI->format.image.nStride,portDefI->format.image.nSliceHeight);
         }
         else
         {
@@ -2226,7 +2226,7 @@ static OMX_ERRORTYPE callback_EmptyBufferDone(OMX_HANDLETYPE, OMX_PTR pAppData, 
 
     if (component->type() == Encoder::cType)
     {
-        //printf("Filled %d Timestamp %li\n",pBuffer->nFilledLen,pBuffer->nTickCount);
+        //fprintf(stderr,"Filled %d Timestamp %li\n",pBuffer->nFilledLen,pBuffer->nTickCount);
         Encoder *encoder = static_cast<Encoder *>(pAppData);
         encoder->inBuffer().setFilled();
     }
@@ -2252,7 +2252,7 @@ static OMX_ERRORTYPE callback_FillBufferDone(OMX_HANDLETYPE hComponent, OMX_PTR 
 
     if (component->type() == Encoder::cType)
     {
-        //printf("Filled %d Timestamp %li\n",pBuffer->nFilledLen,pBuffer->nTickCount);
+        //fprintf(stderr,"Filled %d Timestamp %li\n",pBuffer->nFilledLen,pBuffer->nTickCount);
         Encoder *encoder = static_cast<Encoder *>(pAppData);
         encoder->outBuffer().setFilled();
     }
@@ -2405,10 +2405,10 @@ class TSEncaspulator
         int64_t ret;
         int len;
 
-        //printf("key_frame=%lld Size=%d Temps=%f\n",key_frame,size*8);
+        //fprintf(stderr,"key_frame=%lld Size=%d Temps=%f\n",key_frame,size*8);
 
         if (InternalBufferSize + size > MAX_SIZE_PICTURE)
-            printf("MaxPictureSize Overflow\n");
+            fprintf(stderr,"MaxPictureSize Overflow\n");
         memcpy(InternalBuffer + InternalBufferSize, buffer, size);
         InternalBufferSize += size;
 
@@ -2416,12 +2416,12 @@ class TSEncaspulator
         {
             CodecSize += size;
 
-            /* printf("CODEC: ");
+            /* fprintf(stderr,"CODEC: ");
             for(int i=0;i<size;i++)
             {
-                printf("%x ",buffer[i]);
+                fprintf(stderr,"%x ",buffer[i]);
             }
-            printf("\n");*/
+            fprintf(stderr,"\n");*/
             return;
         }
 
@@ -2513,7 +2513,7 @@ class TSEncaspulator
             }
             else
             {
-                //printf("%d:%d %lld\n",Time->tv_sec,Time->tv_nsec/(int64_t)1E6L,key_frame);
+                //fprintf(stderr,"%d:%d %lld\n",Time->tv_sec,Time->tv_nsec/(int64_t)1E6L,key_frame);
                 vdts = (Time->tv_sec * 1000 + Time->tv_nsec / 1000000.0) * 90L; //TimeToTransmitFrameUs*90L/1000;
                 vpts = (Time->tv_sec * 1000 + Time->tv_nsec / 1000000.0) * 90L;
 
@@ -2524,7 +2524,7 @@ class TSEncaspulator
             }
             tsframe.dts = vdts;
             tsframe.pts = vpts;
-            // printf("Video Init time = %lld final %lld dts=%lld ms,pts=%lld\n",tsframe.cpb_initial_arrival_time/(27000LL),tsframe.cpb_final_arrival_time/27000LL,vdts/90,vpts/90);
+            // fprintf(stderr,"Video Init time = %lld final %lld dts=%lld ms,pts=%lld\n",tsframe.cpb_initial_arrival_time/(27000LL),tsframe.cpb_final_arrival_time/27000LL,vdts/90,vpts/90);
             tsframe.random_access = 1; //key_frame;
             tsframe.priority = key_frame;
             tsframe.ref_pic_idc = 0; //Fixme (frame->pict_type == AV_PICTURE_TYPE_B) ? 1 : 0
@@ -2541,12 +2541,12 @@ class TSEncaspulator
                     LastPCR = pcr_list[(len / 188) - 1] / 27000LL - 10000; //In ms
                                                                            //if(tsframe.frame_type!=LIBMPEGTS_CODING_TYPE_SLICE_P)
                     {
-                        //printf("Key = %lld, PCR = %lld should be %d PCR/DTS = %lld  LatestPCRMUX %lld CurPCR %lld\n",key_frame,tsframe.cpb_initial_arrival_time/27000LL,(int)(key_frame*FrameDuration+DelayPTS),vpts/90L-tsframe.cpb_initial_arrival_time/27000LL,LastPCR);
+                        //fprintf(stderr,"Key = %lld, PCR = %lld should be %d PCR/DTS = %lld  LatestPCRMUX %lld CurPCR %lld\n",key_frame,tsframe.cpb_initial_arrival_time/27000LL,(int)(key_frame*FrameDuration+DelayPTS),vpts/90L-tsframe.cpb_initial_arrival_time/27000LL,LastPCR);
                     }
                 }
                 else
                 {
-                    printf("Skip Init %lld Arrival %lld dts %lld pts %lld \n", tsframe.cpb_initial_arrival_time / 27000LL, tsframe.cpb_final_arrival_time / 27000LL, vdts / 90L, vpts / 90L);
+                    fprintf(stderr,"Skip Init %lld Arrival %lld dts %lld pts %lld \n", tsframe.cpb_initial_arrival_time / 27000LL, tsframe.cpb_final_arrival_time / 27000LL, vdts / 90L, vpts / 90L);
                 }
             }
             else
@@ -2558,7 +2558,7 @@ class TSEncaspulator
                 {
                     /*if(len>10000)
 					{
-						printf("TimeToTransmitFrameUs=%d %d bitrate=%d\n",TimeToTransmitFrameUs,len,len*8*Videofps);
+						fprintf(stderr,"TimeToTransmitFrameUs=%d %d bitrate=%d\n",TimeToTransmitFrameUs,len,len*8*Videofps);
 						fprintf(stderr, "Muxed VIDEO len: %d %d\n", len, ret);
 					}*/
                     static struct timespec gettime_now, gettime_first;
@@ -2575,8 +2575,8 @@ class TSEncaspulator
                         int n, ret;
                         ret = ioctl(fileno(vout), FIONREAD, &n);
 
-                        if ((ret == 0) && (n > 40000))
-                            printf("Overflow outpipe %ld Pipe %d\n", time_difference, n);
+                        if ((ret == 0) && (n > 64000))
+                            fprintf(stderr,"Overflow outpipe %ld Pipe %d\n", time_difference, n);
 
                         fwrite(out, 1, len, vout);
                         fflush(vout);
@@ -2612,7 +2612,7 @@ stream->audio_frame_size = (double)encoder->num_samples * 90000LL * output_strea
 coded_frame->random_access = 1; // Every frame output is a random access point 
 ..
 */
-        //if(size<100) {printf("!");return;}
+        //if(size<100) {fprintf(stderr,"!");return;}
         static uint64_t AudioFrame = 0;
         ts_frame_t tsframe;
         
@@ -2631,7 +2631,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
 		{
 				
 				
-				printf("===========   Audio Drift %lld Correction =%lld\n",abs(vpts-(AudioFrame*pts_increment+OffsetFromVideo))/90L,OffsetFromVideo/90LL);
+				fprintf(stderr,"===========   Audio Drift %lld Correction =%lld\n",abs(vpts-(AudioFrame*pts_increment+OffsetFromVideo))/90L,OffsetFromVideo/90LL);
                 OffsetFromVideo=vpts-AudioFrame*pts_increment;
 		}
         /*
@@ -2660,20 +2660,20 @@ coded_frame->random_access = 1; // Every frame output is a random access point
 
         tsframe.dts = pts_increment * AudioFrame + OffsetFromVideo + (DelayPTS - 5) * 90LL; // pts_increment*AudioFrame+DelayPTS*90L;
         tsframe.pts = pts_increment * AudioFrame + OffsetFromVideo + DelayPTS * 90LL;       //  pts_increment*AudioFrame+DelayPTS*90L;
-        //printf("Keyframe %lld Video dts=%lld,pts=%lld Audio Size = %d dts=%lld,pts=%lld\n",key_frame, vdts / 90, vpts / 90,size, tsframe.dts / 90, tsframe.pts / 90);
+        //fprintf(stderr,"Keyframe %lld Video dts=%lld,pts=%lld Audio Size = %d dts=%lld,pts=%lld\n",key_frame, vdts / 90, vpts / 90,size, tsframe.dts / 90, tsframe.pts / 90);
         /*int ret =*/ ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
         
         /*if ((ret==0)&&len)
 			{
 				
-					printf("Audio First PCR=%lld, End=%lld\n",pcr_list[0]/27000LL-10000,pcr_list[(len/188)-1]/27000LL-10000);
+					fprintf(stderr,"Audio First PCR=%lld, End=%lld\n",pcr_list[0]/27000LL-10000,pcr_list[(len/188)-1]/27000LL-10000);
 		
 				if(vout)
 				{
 					int n,ret;
 					ret=ioctl(fileno(vout), FIONREAD, &n);
 					if((ret==0)&&(n>40000)) 
-						printf("Overflow outpipe Pipe %d\n",n);
+						fprintf(stderr,"Overflow outpipe Pipe %d\n",n);
 			
 					 fwrite(out, 1, len, vout);
 				}
@@ -2700,7 +2700,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
                 len -= (BUFF_MAX_SIZE - Size);
                 if (sendto(m_sock, Buffer, BUFF_MAX_SIZE, 0, (struct sockaddr *)&m_client, sizeof(m_client)) < 0)
                 {
-                    printf("UDP send failed\n");
+                    fprintf(stderr,"UDP send failed\n");
                 }
                 Size = 0;
             }
@@ -2714,7 +2714,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         }
         /*
     	if(sendto(m_sock, b, len, 0,(struct sockaddr *) &m_client, sizeof(m_client))<0){
-        printf("UDP send failed\n");
+        fprintf(stderr,"UDP send failed\n");
     	}*/
     }
 
@@ -2759,7 +2759,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         // Create a socket for transmitting UDP TS packets
         if ((m_sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
         {
-            printf("Failed to create socket\n");
+            fprintf(stderr,"Failed to create socket\n");
             return;
         }
         udp_set_ip(UdpOutput);
@@ -3195,16 +3195,16 @@ class CameraTots
             //encoder.setDynamicBitrate(EncVideoBitrate);
             //encoder.setQP(20,20); // Do not set in realtime
 
-            //printf("Len = %"\n",encBufferLow
+            //fprintf(stderr,"Len = %"\n",encBufferLow
 
             if (encBuffer.flags() & OMX_BUFFERFLAG_CODECSIDEINFO)
             {
                 int RealWidthMB = ((CurrentVideoFormat.width >> 5) << 5) >> 4;
                 int RealHeightMB = ((CurrentVideoFormat.height >> 4) << 4) >> 4;
 #define couleur(param) printf("\033[%dm", param)
-                printf("\033[H\033[2J");
+                fprintf(stderr,"\033[H\033[2J");
                 //int LenVector=encBuffer.dataSize();
-                //printf("X %d Y %d Keyframe %d LenVector %d\n",RealWidthMB,RealHeightMB,key_frame,LenVector);
+                //fprintf(stderr,"X %d Y %d Keyframe %d LenVector %d\n",RealWidthMB,RealHeightMB,key_frame,LenVector);
                 for (int j = 0; j < RealHeightMB; j++)
                 {
                     for (int i = 0; i < RealWidthMB; i++)
@@ -3217,11 +3217,11 @@ class CameraTots
                         {
                             int intensity = (7 * MotionAmplitude) / 256 + 31;
                             couleur(intensity);
-                            printf("*");
+                            fprintf(stderr,"*");
                         }
                         else
                         {
-                            printf(" ");
+                            fprintf(stderr," ");
                         }
                     }
                     couleur(37);
@@ -3233,14 +3233,14 @@ class CameraTots
                         if (SAD > 16000)
                         {
 
-                            printf("*");
+                            fprintf(stderr,"*");
                         }
                         else
                         {
-                            printf(" ");
+                            fprintf(stderr," ");
                         }
                     }
-                    printf("\n");
+                    fprintf(stderr,"\n");
                 }
                 encBuffer.setFilled(false);
                 encoder.callFillThisBuffer();
@@ -3258,7 +3258,7 @@ class CameraTots
                 struct timespec gettime_now;
 
                 clock_gettime(CLOCK_REALTIME, &gettime_now);
-                //printf("Avnt %ld:%ld - %ld:%ld \n",gettime_now.tv_sec,gettime_now.tv_nsec,InitTime.tv_sec,InitTime.tv_nsec);
+                //fprintf(stderr,"Avnt %ld:%ld - %ld:%ld \n",gettime_now.tv_sec,gettime_now.tv_nsec,InitTime.tv_sec,InitTime.tv_nsec);
                 //gettime_now.tv_sec=(int)difftime(gettime_now.tv_sec,InitTime.tv_sec);
                 gettime_now.tv_sec = gettime_now.tv_sec - InitTime.tv_sec;
                 if (gettime_now.tv_nsec < InitTime.tv_nsec)
@@ -3278,7 +3278,7 @@ class CameraTots
             else
             {
                 key_frame++; //Skipped Frame, key_frame++ to allow correct timing for next valid frames
-                printf("!");
+                fprintf(stderr,"!");
             }
             /* if(m_RowBySlice) //No I picture with this mode ?!
                 {
@@ -3338,7 +3338,7 @@ class CameraTots
 
     void Terminate()
     {
-        printf("Terminate camera..\n");
+        fprintf(stderr,"Terminate camera..\n");
         // stop capturing video with the camera
         {
             camera.capture(Camera::OPORT_VIDEO, OMX_FALSE);
@@ -3350,7 +3350,7 @@ class CameraTots
 
             //encoder.callFillThisBuffer();
         }
-        printf("Terminate camera..Flushing\n");
+        fprintf(stderr,"Terminate camera..Flushing\n");
         // flush the buffers on each component
         {
             camera.flushPort();
@@ -3358,7 +3358,7 @@ class CameraTots
                 videorender.flushPort();
             encoder.flushPort();
         }
-        printf("Terminate camera..Disableport\n");
+        fprintf(stderr,"Terminate camera..Disableport\n");
         // disable all the ports
         {
 
@@ -3374,14 +3374,14 @@ class CameraTots
             //videorender.disablePort();
             //camera.disablePort();
         }
-        printf("Terminate camera..Free\n");
+        fprintf(stderr,"Terminate camera..Free\n");
         // free all the buffers
         {
             camera.freeBuffers();
             //videorender.freeBuffers();
             encoder.freeBuffers();
         }
-        printf("Terminate camera..idle\n");
+        fprintf(stderr,"Terminate camera..idle\n");
         // transition all the components to idle states
         {
             camera.switchState(OMX_StateIdle);
@@ -3446,7 +3446,7 @@ class PictureTots
             pwebcam = new Webcam(Extra);
             int CamWidth, CamHeight;
             pwebcam->GetCameraSize(CamWidth, CamHeight);
-            printf("Resizer input = %d x %d\n", CamWidth, CamHeight);
+            fprintf(stderr,"Resizer input = %d x %d\n", CamWidth, CamHeight);
 
             resizer.setupOutputPort(CamWidth, CamHeight, VideoFormat, OMX_COLOR_FormatYUV420PackedPlanar);
         }
@@ -3460,18 +3460,18 @@ class PictureTots
             int DisplayWidth, DisplayHeight, Rotate;
 
             pgrabdisplay->GetDisplaySize(DisplayWidth, DisplayHeight, Rotate);
-            printf("Resizer input = %d x %d\n", DisplayWidth, DisplayHeight);
+            fprintf(stderr,"Resizer input = %d x %d\n", DisplayWidth, DisplayHeight);
             resizer.setupOutputPort(DisplayWidth, DisplayHeight, VideoFormat, OMX_COLOR_Format32bitABGR8888);
         }
         if (Mode == Mode_VNCCLIENT)
         {
-            printf("Connecting to VNCSERVER %s...\n", Extra);
+            fprintf(stderr,"Connecting to VNCSERVER %s...\n", Extra);
 
             pvncclient = new VncClient(Extra, "datv");
             int DisplayWidth, DisplayHeight, Rotate;
 
             pvncclient->GetDisplaySize(DisplayWidth, DisplayHeight, Rotate);
-            printf("Resizer input = %d x %d\n", DisplayWidth, DisplayHeight);
+            fprintf(stderr,"Resizer input = %d x %d\n", DisplayWidth, DisplayHeight);
             resizer.setupOutputPort(DisplayWidth, DisplayHeight, VideoFormat, OMX_COLOR_Format32bitABGR8888);
         }
         if (Mode == Mode_FFMPEG)
@@ -3522,7 +3522,7 @@ class PictureTots
         // With Main Profile : have more skipped frame
         tsencoder.SetOutput(FileName, Udp);
         tsencoder.ConstructTsTree(VideoBitrate, TsBitrate, PMTPid, sdt, fps, 1);
-        printf("Ts bitrate = %d\n", TsBitrate);
+        fprintf(stderr,"Ts bitrate = %d\n", TsBitrate);
 
         ERR_OMX(OMX_SetupTunnel(resizer.component(), Resizer::OPORT, encoder.component(), Encoder::IPORT), "tunnel resizer.output -> encoder.input (low)");
 
@@ -3560,7 +3560,7 @@ class PictureTots
         {
             pffmpeg->SetOmxBuffer((unsigned char *)resizer.inBuffer().data());
         }
-        printf("Allocsize= %d\n", resizer.inBuffer().allocSize());
+        fprintf(stderr,"Allocsize= %d\n", resizer.inBuffer().allocSize());
         encoder.allocBuffers(false); //Only  Bufout
 
         // switch state of the components prior to starting
@@ -3585,11 +3585,11 @@ class PictureTots
             time_difference += 1E9;
 
         long BigToSleepns = (MuToSleep * 1000L - time_difference - KERNEL_GRANULARITY);
-        //printf("ToSleep %ld\n",BigToSleepns/1000);
+        //fprintf(stderr,"ToSleep %ld\n",BigToSleepns/1000);
         if (BigToSleepns < KERNEL_GRANULARITY)
         {
             last_time = gettime_now;
-            printf("I am late %ld\n",BigToSleepns);
+            fprintf(stderr,"I am late %ld\n",BigToSleepns);
             return;
         }
 
@@ -3600,9 +3600,9 @@ class PictureTots
             time_difference = gettime_now.tv_nsec - last_time.tv_nsec;
             if (time_difference < 0)
                 time_difference += 1E9;
-            //printf("#");
+            //fprintf(stderr,"#");
         } while (time_difference < (MuToSleep * 1000L - MARGIN));
-        //printf("TimeDiff =%ld\n",time_difference);
+        //fprintf(stderr,"TimeDiff =%ld\n",time_difference);
         last_time = gettime_now;
     }
 
@@ -3657,7 +3657,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
 	OMX_U8 *PlanU=out+Width*Height;
 	OMX_U8 *PlanV=PlanU+(Width*Height)/4;
 	
-	//printf("WidthMissin %d\n",WidthMissing);
+	//fprintf(stderr,"WidthMissin %d\n",WidthMissing);
 	int count=0;
 	for(int j=0;j<Height;j++)
 	{
@@ -3677,7 +3677,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
 		inprocess+=WidthMissing*2;
 		count+=WidthMissing*2;
 	}
-	//printf("Count =%d\n",count);
+	//fprintf(stderr,"Count =%d\n",count);
 }
 */
 
@@ -3691,21 +3691,21 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
 
             //encoder.getEncoderStat(encBuffer.flags());
             //encoder.setDynamicBitrate(EncVideoBitrate);
-            //printf("Len = %"\n",encBufferLow
+            //fprintf(stderr,"Len = %"\n",encBufferLow
             /*if(key_frame%250==0)
 				{
 					QP--;	
 					encoder.setQPLimits(QP,QP);
-					printf("------ QP =%d\n",QP);
+					fprintf(stderr,"------ QP =%d\n",QP);
 				}*/
             if (encBuffer.flags() & OMX_BUFFERFLAG_CODECSIDEINFO)
             {
                 int RealWidthMB = ((CurrentVideoFormat.width >> 5) << 5) >> 4;
                 int RealHeightMB = ((CurrentVideoFormat.height >> 4) << 4) >> 4;
-#define couleur(param) printf("\033[%dm", param)
-                printf("\033[H\033[2J");
+//#define couleur(param) fprintf(stderr,"\033[%dm", param)
+                fprintf(stderr,"\033[H\033[2J");
                 //int LenVector=encBuffer.dataSize();
-                //printf("X %d Y %d Keyframe %d LenVector %d\n",RealWidthMB,RealHeightMB,key_frame,LenVector);
+                //fprintf(stderr,"X %d Y %d Keyframe %d LenVector %d\n",RealWidthMB,RealHeightMB,key_frame,LenVector);
                 for (int j = 0; j < RealHeightMB; j++)
                 {
                     for (int i = 0; i < RealWidthMB; i++)
@@ -3718,11 +3718,11 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                         {
                             int intensity = (7 * MotionAmplitude) / 256 + 31;
                             couleur(intensity);
-                            printf("*");
+                            fprintf(stderr,"*");
                         }
                         else
                         {
-                            printf(" ");
+                            fprintf(stderr," ");
                         }
                     }
                     couleur(37);
@@ -3734,14 +3734,14 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                         if (SAD > 16000)
                         {
 
-                            printf("*");
+                            fprintf(stderr,"*");
                         }
                         else
                         {
-                            printf(" ");
+                            fprintf(stderr," ");
                         }
                     }
-                    printf("\n");
+                    fprintf(stderr,"\n");
                 }
                 encBuffer.setFilled(false);
                 encoder.callFillThisBuffer();
@@ -3760,7 +3760,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                 struct timespec gettime_now;
 
                 clock_gettime(CLOCK_REALTIME, &gettime_now);
-                //printf("Avnt %ld:%ld - %ld:%ld \n",gettime_now.tv_sec,gettime_now.tv_nsec,InitTime.tv_sec,InitTime.tv_nsec);
+                //fprintf(stderr,"Avnt %ld:%ld - %ld:%ld \n",gettime_now.tv_sec,gettime_now.tv_nsec,InitTime.tv_sec,InitTime.tv_nsec);
                 //gettime_now.tv_sec=(int)difftime(gettime_now.tv_sec,InitTime.tv_sec);
                 gettime_now.tv_sec = gettime_now.tv_sec - InitTime.tv_sec;
                 if (gettime_now.tv_nsec < InitTime.tv_nsec)
@@ -3797,7 +3797,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
             {
                 //usleep_exactly(1e6/(2*Videofps));
                 key_frame++; //Skipped Frame, key_frame++ to allow correct timing for next valid frames
-                printf("!%ld\n", key_frame);
+                fprintf(stderr,"!%ld\n", key_frame);
             }
 
 
@@ -3843,7 +3843,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
 				time_difference = gettime_now.tv_nsec - first_time.tv_nsec;
 				if (time_difference < 0)
 					time_difference += 1E9;
-				printf("Grab time=%ld us\n",time_difference/1000);
+				fprintf(stderr,"Grab time=%ld us\n",time_difference/1000);
 
                
                 int DisplayWidth, DisplayHeight, Rotate;
@@ -3851,7 +3851,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                 pgrabdisplay->GetDisplaySize(DisplayWidth, DisplayHeight, Rotate);
                 filledLen = PictureBuffer.allocSize(); //DisplayWidth*DisplayHeight*4;
 
-                //printf("%d filled\n",filledLen);
+                //fprintf(stderr,"%d filled\n",filledLen);
                 usleep_exactly(1e6 / Videofps);
             }
 
@@ -3861,14 +3861,14 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                 int FrameDiff = pvncclient->GetPicture(Videofps);
 
                 filledLen = PictureBuffer.allocSize();
-                //printf("%d filled\n",filledLen);
+                //fprintf(stderr,"%d filled\n",filledLen);
                 if (FrameDiff == 0)
                     usleep_exactly(1e6 / Videofps);
                 else
                 {
                     //usleep_exactly((FrameDiff+1)*1e6/Videofps);
                     key_frame += FrameDiff;
-                    //printf("DiffFrame %d\n",FrameDiff);
+                    //fprintf(stderr,"DiffFrame %d\n",FrameDiff);
                 }
             }
             if (Mode == Mode_FFMPEG)
@@ -4045,7 +4045,7 @@ int main(int argc, char **argv)
             break;
         case 'm': // Mux
             MuxBitrate = atoi(optarg);
-            printf("\nAvc2ts bitrate=%d\n", MuxBitrate);
+            fprintf(stderr,"\nAvc2ts bitrate=%d\n", MuxBitrate);
             break;
         case 'h': // help
             print_usage();
@@ -4179,7 +4179,7 @@ else
                 PictureMode = PictureTots::Mode_VNCCLIENT;
                 if (ExtraArg == NULL)
                 {
-                    printf("IP of VNCServer should be set with -e option\n");
+                    fprintf(stderr,"IP of VNCServer should be set with -e option\n");
                     exit(0);
                 }
                 picturetots = new PictureTots;
