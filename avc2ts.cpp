@@ -2330,7 +2330,7 @@ class TSEncaspulator
             udp_init();
     };
 
-    void ConstructTsTree(int VideoBit, int TsBitrate, int PMTPid, char *sdt, int fps = 25, int AudioPresent = 0)
+    void ConstructTsTree(int VideoBit, int TsBitrate, int PMTPid, char *sdt, int fps = 25, int AudioPresent = 0,int audiobitrate=32000)
     {
 
         IsAudioPresent = AudioPresent;
@@ -2378,7 +2378,7 @@ class TSEncaspulator
             ts_stream[1].audio_type = LIBMPEGTS_AUDIO_SERVICE_UNDEFINED;
             //audio_frame_size - size of one audio frame in 90KHz ticks. (e.g. for ac3 1536 * 90000/samplerate )
             //stream->audio_frame_size = (double)encoder->num_samples * 90000LL * output_stream->ts_opts.frames_per_pes / input_stream->sample_rate;
-            ts_stream[1].audio_frame_size = 2048 * 2 * 90000 / 48000; // To be calculated from bitrate : fixme !
+            ts_stream[1].audio_frame_size = 2048 * 90000 / 48000; // To be calculated from bitrate : fixme !
         }
         ts_setup_transport_stream(writer, &tsmain);
         ts_setup_sdt(writer);
@@ -2790,7 +2790,7 @@ class AudioEncoder
     AudioEncoder()
     {
 
-        AudioIn = fopen("audioin.wav", "r+");
+        
 
         if ((ErrorStatus = aacEncOpen(&hAacEncoder, 0x0 /*HeAACv2 only*/, 2 /*Stereo*/)) != AACENC_OK)
         {
@@ -2874,6 +2874,23 @@ class AudioEncoder
         {
             aacEncClose(&hAacEncoder);
         }
+    }
+
+    bool SetWavFile(char *WavFileName)
+    {
+        AudioIn = fopen("audioin.wav", "r+");
+        if(AudioIn!=NULL) return true; else return false;
+    }
+
+    bool SetBitRate(size_t bitrate)
+    {
+        if (aacEncoder_SetParam(hAacEncoder, AACENC_BITRATE, bitrate) != AACENC_OK)
+        {
+            fprintf(stderr, "Unable to set the bitrate\n");
+            return false;
+        }
+        else
+            return true;
     }
 
     bool EncodeFrame(void)
@@ -3041,11 +3058,20 @@ class CameraTots
     int m_RowBySlice;
     AudioEncoder audioencoder;
     int Videofps;
+    bool TxAudio=false;
 
   public:
-    void Init(VideoFromat &VideoFormat, char *FileName, char *Udp, int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0)
+    void Init(VideoFromat &VideoFormat, char *FileName, char *Udp, int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0,char *audiofilename=NULL,size_t audiobitrate=32000)
     {
+        TxAudio=(audiofilename!=NULL);
+        if(TxAudio)
+        {
+            TxAudio=audioencoder.SetWavFile(audiofilename);
+            TxAudio=audioencoder.SetBitRate(audiobitrate);
+        }
+
         CurrentVideoFormat = VideoFormat;
+
         DelayPTS = SetDelayPts;
         // configuring camera
         Videofps = fps;
@@ -3314,21 +3340,23 @@ class CameraTots
             }
 
             // *********** AUDIO ******************
-            static float TimeAudio = 0.0;
-            //float VideoFrameDuration = 1.0 / (float)Videofps;
-            while (TimeAudio < tsencoder.vpts/90000.0) //fixme 40 depend framerate
+            if(TxAudio)
             {
-                //fprintf(stderr,"TimeAudio %f keyframe %f\n",TimeAudio,tsencoder.vpts/90000.0);
-                if (audioencoder.EncodeFrame())
+                static float TimeAudio = 0.0;
+                //float VideoFrameDuration = 1.0 / (float)Videofps;
+                while (TimeAudio < tsencoder.vpts/90000.0) //fixme 40 depend framerate
                 {
+                    //fprintf(stderr,"TimeAudio %f keyframe %f\n",TimeAudio,tsencoder.vpts/90000.0);
+                    if (audioencoder.EncodeFrame())
+                    {
 
-                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS /*,&gettime_now*/);
-                    TimeAudio += 2048.0 / 48000.0;
+                        tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS /*,&gettime_now*/);
+                        TimeAudio += 2048.0 / 48000.0;
+                    }
+                    else
+                        fprintf(stderr, "incomplete\n");
                 }
-                else
-                    fprintf(stderr, "incomplete\n");
             }
-            
         }
         //===== test Audio =====
         //#define WITH_AUDIO 1
@@ -3422,7 +3450,7 @@ class PictureTots
     struct timespec InitTime;
     
     AudioEncoder audioencoder;
-
+    bool TxAudio=false;
   public:
     static const int Mode_PATTERN = 0;
     static const int Mode_V4L2 = 1;
@@ -3431,7 +3459,7 @@ class PictureTots
     static const int Mode_FFMPEG = 4;
 
   public:
-    void Init(VideoFromat &VideoFormat, char *FileName, char *Udp, int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0, int ModeInput = Mode_PATTERN, char *Extra = NULL)
+    void Init(VideoFromat &VideoFormat, char *FileName, char *Udp, int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0, int ModeInput = Mode_PATTERN, char *Extra = NULL,char *audiofilename=NULL,size_t audiobitrate=32000)
     {
         last_time.tv_sec = 0;
         last_time.tv_nsec = 0;
@@ -3441,6 +3469,13 @@ class PictureTots
         EncVideoBitrate = VideoBitrate;
         Mode = ModeInput;
         
+        TxAudio=(audiofilename!=NULL);
+        if(TxAudio)
+        {
+            TxAudio=audioencoder.SetWavFile(audiofilename);
+            TxAudio=audioencoder.SetBitRate(audiobitrate);
+        }
+
         if (Mode == Mode_V4L2)
         {
             pwebcam = new Webcam(Extra);
@@ -3778,20 +3813,23 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
 
                 //Now Audio
                 // *********** AUDIO ******************
-                static float TimeAudio = 0.0;
-                //float VideoFrameDuration = 1.0 / (float)Videofps;
-                while (TimeAudio < tsencoder.vpts/90000.0) //fixme 40 depend framerate
+                if(TxAudio)
                 {
-                    //fprintf(stderr,"TimeAudio %f keyframe %f\n",TimeAudio,tsencoder.vpts/90000.0);
-                    if (audioencoder.EncodeFrame())
+                    static float TimeAudio = 0.0;
+                    //float VideoFrameDuration = 1.0 / (float)Videofps;
+                    while (TimeAudio < tsencoder.vpts/90000.0) //fixme 40 depend framerate
                     {
+                        //fprintf(stderr,"TimeAudio %f keyframe %f\n",TimeAudio,tsencoder.vpts/90000.0);
+                        if (audioencoder.EncodeFrame())
+                        {
 
-                        tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS /*,&gettime_now*/);
-                        TimeAudio += 2048.0 / 48000.0;
+                            tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS /*,&gettime_now*/);
+                            TimeAudio += 2048.0 / 48000.0;
+                        }
+                        else
+                            fprintf(stderr, "incomplete\n");
                     }
-                    else
-                        fprintf(stderr, "incomplete\n");
-                }
+                }    
             }
             else
             {
@@ -3985,6 +4023,8 @@ Usage:\nrpi-avc2ts  -o OutputFile -b BitrateVideo -m BitrateMux -x VideoWidth  -
 			- For VNC : IP address of VNC Server. Password must be datv\n\
 -p 		Set the PidStart: Set PMT=PIDStart,Pidvideo=PidStart+1,PidAudio=PidStart+2\n\
 -s 		Set Servicename : Typically CALL\n\
+-a 		Raw PCM audio(48Khz stereo) Filename\n\
+-z 		Set AAC audio bitrate (32000 by default)\n\
 -h            help (print this help).\n\
 Example : ./avc2ts -o result.ts -b 1000000 -m 1400000 -x 640 -y 480 -f 25 -n 230.0.0.1:1000\n\
 \n",
@@ -4010,7 +4050,9 @@ int main(int argc, char **argv)
     int EnableMotionVectors = 0;
     char *ExtraArg = NULL;
     char *sdt = "F5OEO";
+    char *audiofile = NULL;
     int pidpmt = 255;//, pidvideo = 256, pidaudio = 257;
+    size_t audiobitrate=32000;
 
 #define CAMERA 0
 #define PATTERN 1
@@ -4023,7 +4065,7 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        a = getopt(argc, argv, "o:b:m:hx:y:f:n:d:i:r:vt:e:p:s:");
+        a = getopt(argc, argv, "o:b:m:hx:y:f:n:d:i:r:vt:e:p:s:a:z:");
 
         if (a == -1)
         {
@@ -4091,6 +4133,12 @@ int main(int argc, char **argv)
         case 's': //Service sname : sdt
             sdt = optarg;
             break;
+        case 'a': //Audio AAC
+            audiofile = optarg;
+        break;
+        case 'z': //Audio AAC
+            audiobitrate = atoi(optarg);
+        break;
         case -1:
             break;
         case '?':
@@ -4156,24 +4204,24 @@ else
             {
                 case 0:
                 cameratots = new CameraTots;
-                cameratots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors);
+                cameratots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors,audiofile,audiobitrate);
                 break;
             case PATTERN:
                 PictureMode = PictureTots::Mode_PATTERN;
                 picturetots = new PictureTots;
-                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg);
+                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg,audiofile,audiobitrate);
                 break;
             case USB_CAMERA:
                 PictureMode = PictureTots::Mode_V4L2;
                 if (ExtraArg == NULL)
                     ExtraArg = "/dev/video0";
                 picturetots = new PictureTots;
-                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg);    
+                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg,audiofile,audiobitrate);    
                 break;
             case DISPLAY:
                 PictureMode = PictureTots::Mode_GRABDISPLAY;
                 picturetots = new PictureTots;
-                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg);
+                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg,audiofile,audiobitrate);
                 break;
             case VNC:
                 PictureMode = PictureTots::Mode_VNCCLIENT;
@@ -4183,12 +4231,12 @@ else
                     exit(0);
                 }
                 picturetots = new PictureTots;
-                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg);
+                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg,audiofile,audiobitrate);
                 break;
             case FFMPEG:
                 PictureMode = PictureTots::Mode_FFMPEG;
                 picturetots = new PictureTots;
-                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg);
+                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg,audiofile,audiobitrate);
             break;
             case H264IN:
             h264tots = new H264tots;
