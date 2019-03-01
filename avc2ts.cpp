@@ -2658,7 +2658,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         //tsframe.dts = vpts-DelayPTS*90L;
         //tsframe.pts = vpts;
 
-        tsframe.dts = pts_increment * AudioFrame + OffsetFromVideo + (DelayPTS - 5) * 90LL; // pts_increment*AudioFrame+DelayPTS*90L;
+        tsframe.dts = pts_increment * AudioFrame + OffsetFromVideo + (DelayPTS ) * 90LL; // pts_increment*AudioFrame+DelayPTS*90L;
         tsframe.pts = pts_increment * AudioFrame + OffsetFromVideo + DelayPTS * 90LL;       //  pts_increment*AudioFrame+DelayPTS*90L;
         //fprintf(stderr,"Keyframe %lld Video dts=%lld,pts=%lld Audio Size = %d dts=%lld,pts=%lld\n",key_frame, vdts / 90, vpts / 90,size, tsframe.dts / 90, tsframe.pts / 90);
         /*int ret =*/ ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
@@ -3350,7 +3350,7 @@ class CameraTots
                     if (audioencoder.EncodeFrame())
                     {
 
-                        tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS /*,&gettime_now*/);
+                        tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS+200 /*,&gettime_now*/);
                         TimeAudio += 2048.0 / 48000.0;
                     }
                     else
@@ -3823,7 +3823,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                         if (audioencoder.EncodeFrame())
                         {
 
-                            tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS /*,&gettime_now*/);
+                            tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS+200 /*,&gettime_now*/);
                             TimeAudio += 2048.0 / 48000.0;
                         }
                         else
