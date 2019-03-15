@@ -931,7 +931,6 @@ class Component
 #endif
 };
 
-
 // H264 Decoder
 class Decoder : public Component
 {
@@ -940,9 +939,7 @@ class Decoder : public Component
 
     static const unsigned IPORT = 130;
     static const unsigned OPRT = 131;
-    
 
-    
     static int32_t align(unsigned x, unsigned y)
     {
         return (x + y - 1) & (~(y - 1));
@@ -953,19 +950,16 @@ class Decoder : public Component
           ready_(false)
     {
         requestCallback();
-       
     }
 
     void SetCodec()
     {
-         Parameter<OMX_PARAM_PORTDEFINITIONTYPE> portDef;
-         getPortDefinition(IPORT,portDef);
+        Parameter<OMX_PARAM_PORTDEFINITIONTYPE> portDef;
+        getPortDefinition(IPORT, portDef);
         portDef->format.video.eCompressionFormat = OMX_VIDEO_CodingAVC;
         setPortDefinition(IPORT, portDef);
-
     }
 
-    
     void requestCallback()
     {
         Parameter<OMX_CONFIG_REQUESTCALLBACKTYPE> cbtype;
@@ -998,7 +992,7 @@ class Decoder : public Component
   private:
     Buffer bufferIn_;
     bool ready_;
-};  
+};
 
 /// Raspberry Pi Camera Module
 class Camera : public Component
@@ -1080,7 +1074,7 @@ class Camera : public Component
         }
         else
         {
-            fprintf(stderr,"Camera output used :  %d x %d Padding %d-%d Fps %d-%d\n", sensor->nWidth, sensor->nHeight, sensor->nPaddingRight, sensor->nPaddingDown, sensor->nFrameRateMin, sensor->nFrameRateMax);
+            fprintf(stderr, "Camera output used :  %d x %d Padding %d-%d Fps %d-%d\n", sensor->nWidth, sensor->nHeight, sensor->nPaddingRight, sensor->nPaddingDown, sensor->nFrameRateMin, sensor->nFrameRateMax);
         }
     }
 
@@ -1316,7 +1310,7 @@ class Encoder : public Component
         portDef->format.video.nBitrate = bitrate;
         portDef->nBufferSize = 256000; //By default 65536, but increased for high resolution with big I pictures
                                        // printf("portDef->nBufferCountActual %d\n",portDef->nBufferCountActual);
-        fprintf(stderr,"Video encoding format=%d x %d @ %d fps\n", portDef->format.video.nFrameWidth, portDef->format.video.nFrameHeight, portDef->format.video.xFramerate >> 16);
+        fprintf(stderr, "Video encoding format=%d x %d @ %d fps\n", portDef->format.video.nFrameWidth, portDef->format.video.nFrameHeight, portDef->format.video.xFramerate >> 16);
         //printf("FPS from camera=%x\n",cameraPortDef->format.video.xFramerate);
         if (framerate)
             portDef->format.video.xFramerate = framerate << 16;
@@ -1362,7 +1356,7 @@ class Encoder : public Component
         portDef->format.video.xFramerate = framerate << 16;
         portDef->nBufferSize = 256000; //By default 65536, but increased for high resolution with big I pictures
                                        //printf("FPS from output=%x\n",portDef->format.video.xFramerate);
-        fprintf(stderr,"Aligned = %d Stride= %d\n", portDef->nBufferAlignment, portDef->format.video.nStride);
+        fprintf(stderr, "Aligned = %d Stride= %d\n", portDef->nBufferAlignment, portDef->format.video.nStride);
         setPortDefinition(OPORT, portDef);
     }
 
@@ -1399,17 +1393,14 @@ class Encoder : public Component
         ERR_OMX(OMX_SetParameter(component_, OMX_IndexParamVideoBitrate, &brate), "set bitrate");
     }
 
-    void setVuiParameters(int PixelX,int PixelY)
+    void setVuiParameters(int PixelX, int PixelY)
     {
         //Allowed values are: 1:1, 10:11, 16:11, 40:33, 59:54, and 118:81.
         Parameter<OMX_CONFIG_POINTTYPE> PixelAspect;
-        PixelAspect->nPortIndex=OPORT;
-        PixelAspect->nX=PixelX;
-        PixelAspect->nY=PixelY;
-         ERR_OMX(OMX_SetParameter(component_, OMX_IndexParamBrcmPixelAspectRatio, &PixelAspect), "set Aspext Pixel");
-
-        
-
+        PixelAspect->nPortIndex = OPORT;
+        PixelAspect->nX = PixelX;
+        PixelAspect->nY = PixelY;
+        ERR_OMX(OMX_SetParameter(component_, OMX_IndexParamBrcmPixelAspectRatio, &PixelAspect), "set Aspext Pixel");
     }
 
     void setLevelExtension(int BitrateMaxKbps)
@@ -1575,29 +1566,29 @@ LOW_LATENCY mode is not a mode intended for general use. There was a specific us
         AvcConfig->nPortIndex = OPORT;
 
         ERR_OMX(OMX_GetParameter(component_, OMX_IndexParamVideoAvc, &AvcConfig), "AVCCONFIG");
-        fprintf(stderr,"AvcConfig->nSliceHeaderSpacing %d\n", AvcConfig->nSliceHeaderSpacing);
-        fprintf(stderr,"AvcConfig->nPFrames %d\n", AvcConfig->nSliceHeaderSpacing);
-        fprintf(stderr,"AvcConfig->nBFrames %d\n", AvcConfig->nBFrames);
-        fprintf(stderr,"AvcConfig->bUseHadamard %d\n", AvcConfig->bUseHadamard);
-        fprintf(stderr,"AvcConfig->nRefFrames %d\n", AvcConfig->nRefFrames);
-        fprintf(stderr,"AvcConfig->nRefIdx10ActiveMinus1 %d\n", AvcConfig->nRefIdx10ActiveMinus1);
-        fprintf(stderr,"AvcConfig->nRefIdx11ActiveMinus1 %d\n", AvcConfig->nRefIdx11ActiveMinus1);
-        fprintf(stderr,"AvcConfig->bEnableUEP %d\n", AvcConfig->bEnableUEP);
-        fprintf(stderr,"AvcConfig->bEnableFMO %d\n", AvcConfig->bEnableFMO);
-        fprintf(stderr,"AvcConfig->bEnableASO %d\n", AvcConfig->bEnableASO);
-        fprintf(stderr,"AvcConfig->bEnableRS %d\n", AvcConfig->bEnableRS);
+        fprintf(stderr, "AvcConfig->nSliceHeaderSpacing %d\n", AvcConfig->nSliceHeaderSpacing);
+        fprintf(stderr, "AvcConfig->nPFrames %d\n", AvcConfig->nSliceHeaderSpacing);
+        fprintf(stderr, "AvcConfig->nBFrames %d\n", AvcConfig->nBFrames);
+        fprintf(stderr, "AvcConfig->bUseHadamard %d\n", AvcConfig->bUseHadamard);
+        fprintf(stderr, "AvcConfig->nRefFrames %d\n", AvcConfig->nRefFrames);
+        fprintf(stderr, "AvcConfig->nRefIdx10ActiveMinus1 %d\n", AvcConfig->nRefIdx10ActiveMinus1);
+        fprintf(stderr, "AvcConfig->nRefIdx11ActiveMinus1 %d\n", AvcConfig->nRefIdx11ActiveMinus1);
+        fprintf(stderr, "AvcConfig->bEnableUEP %d\n", AvcConfig->bEnableUEP);
+        fprintf(stderr, "AvcConfig->bEnableFMO %d\n", AvcConfig->bEnableFMO);
+        fprintf(stderr, "AvcConfig->bEnableASO %d\n", AvcConfig->bEnableASO);
+        fprintf(stderr, "AvcConfig->bEnableRS %d\n", AvcConfig->bEnableRS);
         //OMX_VIDEO_AVCPROFILETYPE eProfile;
         //OMX_VIDEO_AVCLEVELTYPE eLevel;
-        fprintf(stderr,"  AvcConfig->nAllowedPictureTypes %d\n", AvcConfig->nAllowedPictureTypes);
-        fprintf(stderr,"	AvcConfig->bFrameMBsOnly %d\n", AvcConfig->bFrameMBsOnly);
-        fprintf(stderr," AvcConfig->bMBAFF %d\n", AvcConfig->bMBAFF);
-        fprintf(stderr,"AvcConfig->bEntropyCodingCABAC %d\n", AvcConfig->bEntropyCodingCABAC);
-        fprintf(stderr,"AvcConfig->bWeightedPPrediction %d\n", AvcConfig->bWeightedPPrediction);
-        fprintf(stderr,"AvcConfig->nWeightedBipredicitonMode %d\n", AvcConfig->nWeightedBipredicitonMode);
-        fprintf(stderr," AvcConfig->bconstIpred  %d\n", AvcConfig->bconstIpred);
-        fprintf(stderr,"AvcConfig->bDirect8x8Inference %d\n", AvcConfig->bDirect8x8Inference);
-        fprintf(stderr,"AvcConfig->bDirectSpatialTemporal %d\n", AvcConfig->bDirectSpatialTemporal);
-        fprintf(stderr,"AvcConfig->nCabacInitIdc %d\n", AvcConfig->nCabacInitIdc);
+        fprintf(stderr, "  AvcConfig->nAllowedPictureTypes %d\n", AvcConfig->nAllowedPictureTypes);
+        fprintf(stderr, "	AvcConfig->bFrameMBsOnly %d\n", AvcConfig->bFrameMBsOnly);
+        fprintf(stderr, " AvcConfig->bMBAFF %d\n", AvcConfig->bMBAFF);
+        fprintf(stderr, "AvcConfig->bEntropyCodingCABAC %d\n", AvcConfig->bEntropyCodingCABAC);
+        fprintf(stderr, "AvcConfig->bWeightedPPrediction %d\n", AvcConfig->bWeightedPPrediction);
+        fprintf(stderr, "AvcConfig->nWeightedBipredicitonMode %d\n", AvcConfig->nWeightedBipredicitonMode);
+        fprintf(stderr, " AvcConfig->bconstIpred  %d\n", AvcConfig->bconstIpred);
+        fprintf(stderr, "AvcConfig->bDirect8x8Inference %d\n", AvcConfig->bDirect8x8Inference);
+        fprintf(stderr, "AvcConfig->bDirectSpatialTemporal %d\n", AvcConfig->bDirectSpatialTemporal);
+        fprintf(stderr, "AvcConfig->nCabacInitIdc %d\n", AvcConfig->nCabacInitIdc);
         /* AvcConfig->nSliceHeaderSpacing;  
     AvcConfig->nPFrames;     
     AvcConfig->nBFrames;     
@@ -1819,28 +1810,28 @@ So the advice was for MMAL_VIDEO_INTRA_REFRESH_CYCLIC_MROWS and cir_mbs set prob
 
         Parameter<OMX_PARAM_U32TYPE> MemStat;
         ERR_OMX(OMX_GetParameter(component_, OMX_IndexConfigBrcmPoolMemAllocSize, &MemStat), " Get VideoStat");
-        fprintf(stderr,"VideoStat -");
-        fprintf(stderr,"%s", debug);
+        fprintf(stderr, "VideoStat -");
+        fprintf(stderr, "%s", debug);
         //fprintf(stderr,"PoolMem %d ",MemStat);
         //fprintf(stderr,"nImageCount %d ",VideoStat->nImageCount);
-        fprintf(stderr,"nBufferCount %d ", VideoStat->nBufferCount);
-        fprintf(stderr,"nFrameCount %d ", VideoStat->nFrameCount);
-        fprintf(stderr,"Diff %d ", VideoStat->nBufferCount - VideoStat->nFrameCount * 3 + NbCodecConfig);
+        fprintf(stderr, "nBufferCount %d ", VideoStat->nBufferCount);
+        fprintf(stderr, "nFrameCount %d ", VideoStat->nFrameCount);
+        fprintf(stderr, "Diff %d ", VideoStat->nBufferCount - VideoStat->nFrameCount * 3 + NbCodecConfig);
 
         if (VideoStat->nFrameSkips != 0)
-            fprintf(stderr,"nFrameSkips %d ", VideoStat->nFrameSkips);
+            fprintf(stderr, "nFrameSkips %d ", VideoStat->nFrameSkips);
         if (VideoStat->nDiscards != 0)
-            fprintf(stderr,"nDiscards %d ", VideoStat->nDiscards);
+            fprintf(stderr, "nDiscards %d ", VideoStat->nDiscards);
         //        fprintf(stderr,"nEOS %d ",VideoStat->nEOS);
         //fprintf(stderr,"nMaxFrameSize %d ",VideoStat->nMaxFrameSize);
-        fprintf(stderr,"FrameSize %d (%d bits) -> %d kb/s", VideoStat->nByteCount.nLowPart - ByteCountBefore, (VideoStat->nByteCount.nLowPart - ByteCountBefore) * 8, ((VideoStat->nByteCount.nLowPart - ByteCountBefore) * 8 * 25) / 1000);
+        fprintf(stderr, "FrameSize %d (%d bits) -> %d kb/s", VideoStat->nByteCount.nLowPart - ByteCountBefore, (VideoStat->nByteCount.nLowPart - ByteCountBefore) * 8, ((VideoStat->nByteCount.nLowPart - ByteCountBefore) * 8 * 25) / 1000);
         ByteCountBefore = VideoStat->nByteCount.nLowPart;
         //fprintf(stderr,"nByteCount %d:%d ",VideoStat->nByteCount.nHighPart,VideoStat->nByteCount.nLowPart);
         //fprintf(stderr,"nMaxTimeDelta %d:%d ",VideoStat->nMaxTimeDelta.nHighPart,VideoStat->nMaxTimeDelta.nLowPart);
         //fprintf(stderr,"nCorruptMBs %d ",VideoStat->nCorruptMBs);
-        fprintf(stderr,"Time %d ", (t.tv_sec - tbefore.tv_sec) * 1000ul + (t.tv_nsec - tbefore.tv_nsec) / 1000000);
+        fprintf(stderr, "Time %d ", (t.tv_sec - tbefore.tv_sec) * 1000ul + (t.tv_nsec - tbefore.tv_nsec) / 1000000);
         //printf("Bitrate %d",(VideoStat->nByteCount.nLowPart*8L)/(((t.tv_sec-tinitial.tv_sec)>0)?(t.tv_sec-tinitial.tv_sec):1));
-        fprintf(stderr,"\n");
+        fprintf(stderr, "\n");
         /*	fprintf(stderr,"VideoStat :Mem=%d ByteCount %d Buffer %d - Frame %d = %d Skip %d Discard %d Max Delta%d:%d TIME %li AverageBitrate=%d\n",MemStat,VideoStat->nByteCount.nLowPart,VideoStat->nBufferCount,VideoStat->nFrameCount,VideoStat->nBufferCount-VideoStat->nFrameCount*3,VideoStat->nFrameSkips,VideoStat->nDiscards,VideoStat->nMaxTimeDelta.nHighPart,VideoStat->nMaxTimeDelta.nLowPart,( t.tv_sec -tbefore.tv_sec  )*1000ul + ( t.tv_nsec - tbefore.tv_nsec)/1000000,(VideoStat->nByteCount.nLowPart*8L)/(((t.tv_sec-tinitial.tv_sec)>0)?(t.tv_sec-tinitial.tv_sec):1));*/
         tbefore = t;
         Count++;
@@ -2004,7 +1995,7 @@ class Resizer : public Component
 
             portDefI->format.image.nStride = SrcImageWidth;
             portDefI->format.image.nSliceHeight = SrcImageHeight;
-            fprintf(stderr,"%d * %d\n", portDefI->format.image.nStride, portDefI->format.image.nSliceHeight);
+            fprintf(stderr, "%d * %d\n", portDefI->format.image.nStride, portDefI->format.image.nSliceHeight);
         }
         else
         {
@@ -2330,7 +2321,7 @@ class TSEncaspulator
             udp_init();
     };
 
-    void ConstructTsTree(int VideoBit, int TsBitrate, int PMTPid, char *sdt, int fps = 25, int AudioPresent = 0,int audiobitrate=32000)
+    void ConstructTsTree(int VideoBit, int TsBitrate, int PMTPid, char *sdt, int fps = 25, int AudioPresent = 0, int audiobitrate = 32000)
     {
 
         IsAudioPresent = AudioPresent;
@@ -2408,7 +2399,7 @@ class TSEncaspulator
         //fprintf(stderr,"key_frame=%lld Size=%d Temps=%f\n",key_frame,size*8);
 
         if (InternalBufferSize + size > MAX_SIZE_PICTURE)
-            fprintf(stderr,"MaxPictureSize Overflow\n");
+            fprintf(stderr, "MaxPictureSize Overflow\n");
         memcpy(InternalBuffer + InternalBufferSize, buffer, size);
         InternalBufferSize += size;
 
@@ -2546,7 +2537,7 @@ class TSEncaspulator
                 }
                 else
                 {
-                    fprintf(stderr,"Skip Init %lld Arrival %lld dts %lld pts %lld \n", tsframe.cpb_initial_arrival_time / 27000LL, tsframe.cpb_final_arrival_time / 27000LL, vdts / 90L, vpts / 90L);
+                    fprintf(stderr, "Skip Init %lld Arrival %lld dts %lld pts %lld \n", tsframe.cpb_initial_arrival_time / 27000LL, tsframe.cpb_final_arrival_time / 27000LL, vdts / 90L, vpts / 90L);
                 }
             }
             else
@@ -2575,8 +2566,8 @@ class TSEncaspulator
                         int n, ret;
                         ret = ioctl(fileno(vout), FIONREAD, &n);
 
-                        if ((ret == 0) && (n > 64000))
-                            fprintf(stderr,"Overflow outpipe %ld Pipe %d\n", time_difference, n);
+                        if ((ret == 0) && (n > 0xFFFF - len))
+                            fprintf(stderr, "Overflow outpipe %ld Pipe %d\n", time_difference, n);
 
                         fwrite(out, 1, len, vout);
                         fflush(vout);
@@ -2601,7 +2592,7 @@ class TSEncaspulator
 
     void AddAudioFrame(uint8_t *buffer, int size, uint64_t key_frame, int DelayPTS = 200, struct timespec *Time = NULL)
     {
-        /*
+/*
 frame_size = (double)codec->frame_size * 125 * stream->bitrate *
                  enc_params->frames_per_pes / enc_params->sample_rate;
     // NB: libfdk-aac already doubles the frame size appropriately 
@@ -2612,10 +2603,11 @@ stream->audio_frame_size = (double)encoder->num_samples * 90000LL * output_strea
 coded_frame->random_access = 1; // Every frame output is a random access point 
 ..
 */
-        //if(size<100) {fprintf(stderr,"!");return;}
+//if(size<100) {fprintf(stderr,"!");return;}
+#define MAX_DRIFT_MS 200
         static uint64_t AudioFrame = 0;
         ts_frame_t tsframe;
-        
+
         //static float TimeToTransmitFrameUs=0;
         int len;
         double pts_increment;
@@ -2627,13 +2619,12 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         pts_increment = (2048 * 90.0 * 1000) / 48000.0;
         static int64_t OffsetFromVideo = 0;
 
-        if(abs(vpts-(AudioFrame*pts_increment+OffsetFromVideo))>400*90L)
-		{
-				
-				
-				fprintf(stderr,"===========   Audio Drift %lld Correction =%lld\n",abs(vpts-(AudioFrame*pts_increment+OffsetFromVideo))/90L,OffsetFromVideo/90LL);
-                OffsetFromVideo=vpts-AudioFrame*pts_increment;
-		}
+        int64_t DriftAudio = vpts - (AudioFrame * pts_increment + OffsetFromVideo);
+        if (abs(DriftAudio) > MAX_DRIFT_MS * 90L)
+        {
+            OffsetFromVideo = vpts - AudioFrame * pts_increment;
+            fprintf(stderr, "===========   Audio Drift %lld Correction =%lld\n", DriftAudio / 90L, OffsetFromVideo / 90LL);
+        }
         /*
         if(Time==NULL)//Frame base calculation
 			{
@@ -2658,11 +2649,11 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         //tsframe.dts = vpts-DelayPTS*90L;
         //tsframe.pts = vpts;
 
-        tsframe.dts = pts_increment * AudioFrame + OffsetFromVideo + (DelayPTS ) * 90LL; // pts_increment*AudioFrame+DelayPTS*90L;
-        tsframe.pts = pts_increment * AudioFrame + OffsetFromVideo + DelayPTS * 90LL;       //  pts_increment*AudioFrame+DelayPTS*90L;
-        //fprintf(stderr,"Keyframe %lld Video dts=%lld,pts=%lld Audio Size = %d dts=%lld,pts=%lld\n",key_frame, vdts / 90, vpts / 90,size, tsframe.dts / 90, tsframe.pts / 90);
-        /*int ret =*/ ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
-        
+        tsframe.dts = pts_increment * AudioFrame + OffsetFromVideo + (DelayPTS)*90LL; // pts_increment*AudioFrame+DelayPTS*90L;
+        tsframe.pts = pts_increment * AudioFrame + OffsetFromVideo + DelayPTS * 90LL; //  pts_increment*AudioFrame+DelayPTS*90L;
+                                                                                      //fprintf(stderr,"Keyframe %lld Video dts=%lld,pts=%lld Audio Size = %d dts=%lld,pts=%lld\n",key_frame, vdts / 90, vpts / 90,size, tsframe.dts / 90, tsframe.pts / 90);
+        /*int ret =*/ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
+
         /*if ((ret==0)&&len)
 			{
 				
@@ -2700,7 +2691,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
                 len -= (BUFF_MAX_SIZE - Size);
                 if (sendto(m_sock, Buffer, BUFF_MAX_SIZE, 0, (struct sockaddr *)&m_client, sizeof(m_client)) < 0)
                 {
-                    fprintf(stderr,"UDP send failed\n");
+                    fprintf(stderr, "UDP send failed\n");
                 }
                 Size = 0;
             }
@@ -2724,7 +2715,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         char *add[3];
         char interface[40];
         u_int16_t sock;
-        
+
         strcpy(text, ip);
         add[0] = strtok(text, ":");
         add[1] = strtok(NULL, ":");
@@ -2733,13 +2724,13 @@ coded_frame->random_access = 1; // Every frame output is a random access point
             sock = 1314;
         else
             sock = atoi(add[1]);
-        if(add[2]==NULL)
+        if (add[2] == NULL)
         {
-           strcpy(interface,"0.0.0.0");      
+            strcpy(interface, "0.0.0.0");
         }
         else
         {
-          strcpy(interface,add[2]);  
+            strcpy(interface, add[2]);
         }
 
         // Construct the client sockaddr_in structure
@@ -2747,9 +2738,9 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         m_client.sin_family = AF_INET;                // Internet/IP
         m_client.sin_addr.s_addr = inet_addr(add[0]); // IP address
         m_client.sin_port = htons(sock);              // server socket
-        
+
         in_addr_t localadapter = inet_addr(interface);
-        setsockopt(m_sock, IPPROTO_IP, IP_MULTICAST_IF, (char*)&localadapter, sizeof(localadapter));
+        setsockopt(m_sock, IPPROTO_IP, IP_MULTICAST_IF, (char *)&localadapter, sizeof(localadapter));
         //in_addr interface_addr;
         //interface_addr = inet_addr("192.168.1.71");
         //setsockopt (m_sock, IPPROTO_IP, IP_MULTICAST_IF, &interface_addr, sizeof(interface_addr));
@@ -2759,7 +2750,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         // Create a socket for transmitting UDP TS packets
         if ((m_sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
         {
-            fprintf(stderr,"Failed to create socket\n");
+            fprintf(stderr, "Failed to create socket\n");
             return;
         }
         udp_set_ip(UdpOutput);
@@ -2789,8 +2780,6 @@ class AudioEncoder
 
     AudioEncoder()
     {
-
-        
 
         if ((ErrorStatus = aacEncOpen(&hAacEncoder, 0x0 /*HeAACv2 only*/, 2 /*Stereo*/)) != AACENC_OK)
         {
@@ -2879,7 +2868,10 @@ class AudioEncoder
     bool SetWavFile(char *WavFileName)
     {
         AudioIn = fopen("audioin.wav", "r+");
-        if(AudioIn!=NULL) return true; else return false;
+        if (AudioIn != NULL)
+            return true;
+        else
+            return false;
     }
 
     bool SetBitRate(size_t bitrate)
@@ -2902,6 +2894,8 @@ class AudioEncoder
             if ((ret < 0) || (n < 2048 * 2 * 2))
             {
                 memset(inputBuffer, 0, sizeof(inputBuffer));
+                //fprintf(stderr,"Fill audio\n");
+                return false;
                 //memcpy(inputBuffer,SinBuffer,sizeof(inputBuffer));
             }
             else
@@ -2967,76 +2961,76 @@ using namespace rpi_omx;
 
 class H264tots
 {
-    #define MAX_PIC_SIZE 512000
-    private:
+#define MAX_PIC_SIZE 512000
+  private:
     TSEncaspulator tsencoder;
-    FILE *h264file=NULL;
-    uint8_t *esBuffer=NULL;
-    size_t Offset=0;
-    int key_frame=1;
+    FILE *h264file = NULL;
+    uint8_t *esBuffer = NULL;
+    size_t Offset = 0;
+    int key_frame = 1;
     int Videofps;
-    int DelayPTS ;
-    public:
-    void Init(char *InputFile,char *FileName, char *Udp,int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0)
+    int DelayPTS;
+
+  public:
+    void Init(char *InputFile, char *FileName, char *Udp, int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0)
     {
         h264file = fopen(InputFile, "r+");
-        if(h264file==NULL) fprintf(stderr,"Error opening h264 inputfile\n");
+        if (h264file == NULL)
+            fprintf(stderr, "Error opening h264 inputfile\n");
         tsencoder.SetOutput(FileName, Udp);
         tsencoder.ConstructTsTree(VideoBitrate, TsBitrate, PMTPid, sdt, fps, 0);
-        esBuffer=(uint8_t*)malloc(MAX_PIC_SIZE);
+        esBuffer = (uint8_t *)malloc(MAX_PIC_SIZE);
         DelayPTS = SetDelayPts;
-        Videofps=fps;
+        Videofps = fps;
     }
 
     void Run(bool want_quit)
     {
-        bool EsNotCompleted=true;
-        
-        size_t n=fread(&esBuffer[Offset],1,1000,h264file);
-        Offset+=n;
-        
-            
-        while(EsNotCompleted)
+        bool EsNotCompleted = true;
+
+        size_t n = fread(&esBuffer[Offset], 1, 1000, h264file);
+        Offset += n;
+
+        while (EsNotCompleted)
         {
-            
-            
+
             //if(n!=0)   fprintf(stderr,"Offset=%d\n",Offset);
-            if(Offset<5) {sleep(1);return;}
-            size_t i;
-            for(i=3;i<Offset;i++)
+            if (Offset < 5)
             {
-                if((esBuffer[i]==0)&&(esBuffer[i+1]==0)&&(esBuffer[i+2]==0x1)/*&&(esBuffer[i+3]==0x21)*/)
+                sleep(1);
+                return;
+            }
+            size_t i;
+            for (i = 3; i < Offset; i++)
+            {
+                if ((esBuffer[i] == 0) && (esBuffer[i + 1] == 0) && (esBuffer[i + 2] == 0x1) /*&&(esBuffer[i+3]==0x21)*/)
                 {
-                   //fprintf(stderr,"Frame %d,Size=%d Type%x\n",key_frame,i,esBuffer[i+3]); 
-                   if((esBuffer[3]==0x21)||(esBuffer[3]==0x25))
-                   {
-                    tsencoder.AddFrame(esBuffer,i, OMX_BUFFERFLAG_ENDOFFRAME, key_frame++, DelayPTS); 
-                   }
-                   else
+                    //fprintf(stderr,"Frame %d,Size=%d Type%x\n",key_frame,i,esBuffer[i+3]);
+                    if ((esBuffer[3] == 0x21) || (esBuffer[3] == 0x25))
                     {
-                        tsencoder.AddFrame(esBuffer,i, OMX_BUFFERFLAG_CODECCONFIG, key_frame, DelayPTS); 
+                        tsencoder.AddFrame(esBuffer, i, OMX_BUFFERFLAG_ENDOFFRAME, key_frame++, DelayPTS);
                     }
-                   
-                   memmove(esBuffer,esBuffer+i,Offset-i);
-                   Offset=Offset-i;
-                   break;
+                    else
+                    {
+                        tsencoder.AddFrame(esBuffer, i, OMX_BUFFERFLAG_CODECCONFIG, key_frame, DelayPTS);
+                    }
+
+                    memmove(esBuffer, esBuffer + i, Offset - i);
+                    Offset = Offset - i;
+                    break;
                 }
             }
-            if(i==Offset) EsNotCompleted=false;
-
+            if (i == Offset)
+                EsNotCompleted = false;
         }
-
-        
-        
-    }        
+    }
 
     void Terminate()
     {
         fclose(h264file);
         free(esBuffer);
-    }    
+    }
 };
-
 
 class CameraTots
 {
@@ -3052,22 +3046,22 @@ class CameraTots
     VideoFromat CurrentVideoFormat;
     int DelayPTS;
     struct timespec InitTime;
-    
+
     bool VideoPreview = true;
     int m_IDRPeriod = 0;
     int m_RowBySlice;
     AudioEncoder audioencoder;
     int Videofps;
-    bool TxAudio=false;
+    bool TxAudio = false;
 
   public:
-    void Init(VideoFromat &VideoFormat, char *FileName, char *Udp, int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0,char *audiofilename=NULL,size_t audiobitrate=32000)
+    void Init(VideoFromat &VideoFormat, char *FileName, char *Udp, int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0, char *audiofilename = NULL, size_t audiobitrate = 32000)
     {
-        TxAudio=(audiofilename!=NULL);
-        if(TxAudio)
+        TxAudio = (audiofilename != NULL);
+        if (TxAudio)
         {
-            TxAudio=audioencoder.SetWavFile(audiofilename);
-            TxAudio=audioencoder.SetBitRate(audiobitrate);
+            TxAudio = audioencoder.SetWavFile(audiofilename);
+            TxAudio = audioencoder.SetBitRate(audiobitrate);
         }
 
         CurrentVideoFormat = VideoFormat;
@@ -3081,7 +3075,7 @@ class CameraTots
         camera.getSensorModes();
         camera.getSensorCameraMode();
         camera.setImageFilter(OMX_ALL, OMX_ImageFilterNoise);
-        
+
         while (!camera.ready())
         {
             std::cerr << "waiting for camera..." << std::endl;
@@ -3130,7 +3124,7 @@ class CameraTots
             encoder.setSeparateNAL();
             m_RowBySlice = RowBySlice;
             encoder.setMinizeFragmentation(); // Minimize frag seems to block at high resolution : to inspect*/
-            encoder.setVuiParameters(1,1); //PixelAspect
+            encoder.setVuiParameters(1, 1);   //PixelAspect
             if (RowBySlice)
                 encoder.setMultiSlice(RowBySlice, OMX_VIDEO_IntraRefreshCyclic /*OMX_VIDEO_IntraRefreshBoth*/);
 
@@ -3228,7 +3222,7 @@ class CameraTots
                 int RealWidthMB = ((CurrentVideoFormat.width >> 5) << 5) >> 4;
                 int RealHeightMB = ((CurrentVideoFormat.height >> 4) << 4) >> 4;
 #define couleur(param) printf("\033[%dm", param)
-                fprintf(stderr,"\033[H\033[2J");
+                fprintf(stderr, "\033[H\033[2J");
                 //int LenVector=encBuffer.dataSize();
                 //fprintf(stderr,"X %d Y %d Keyframe %d LenVector %d\n",RealWidthMB,RealHeightMB,key_frame,LenVector);
                 for (int j = 0; j < RealHeightMB; j++)
@@ -3243,11 +3237,11 @@ class CameraTots
                         {
                             int intensity = (7 * MotionAmplitude) / 256 + 31;
                             couleur(intensity);
-                            fprintf(stderr,"*");
+                            fprintf(stderr, "*");
                         }
                         else
                         {
-                            fprintf(stderr," ");
+                            fprintf(stderr, " ");
                         }
                     }
                     couleur(37);
@@ -3259,14 +3253,14 @@ class CameraTots
                         if (SAD > 16000)
                         {
 
-                            fprintf(stderr,"*");
+                            fprintf(stderr, "*");
                         }
                         else
                         {
-                            fprintf(stderr," ");
+                            fprintf(stderr, " ");
                         }
                     }
-                    fprintf(stderr,"\n");
+                    fprintf(stderr, "\n");
                 }
                 encBuffer.setFilled(false);
                 encoder.callFillThisBuffer();
@@ -3304,7 +3298,7 @@ class CameraTots
             else
             {
                 key_frame++; //Skipped Frame, key_frame++ to allow correct timing for next valid frames
-                fprintf(stderr,"!");
+                fprintf(stderr, "!");
             }
             /* if(m_RowBySlice) //No I picture with this mode ?!
                 {
@@ -3340,21 +3334,12 @@ class CameraTots
             }
 
             // *********** AUDIO ******************
-            if(TxAudio)
+            if (TxAudio)
             {
-                static float TimeAudio = 0.0;
-                //float VideoFrameDuration = 1.0 / (float)Videofps;
-                while (TimeAudio < tsencoder.vpts/90000.0) //fixme 40 depend framerate
-                {
-                    //fprintf(stderr,"TimeAudio %f keyframe %f\n",TimeAudio,tsencoder.vpts/90000.0);
-                    if (audioencoder.EncodeFrame())
-                    {
 
-                        tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS+200 /*,&gettime_now*/);
-                        TimeAudio += 2048.0 / 48000.0;
-                    }
-                    else
-                        fprintf(stderr, "incomplete\n");
+                while (audioencoder.EncodeFrame()) //fixme 40 depend framerate
+                {
+                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
                 }
             }
         }
@@ -3366,7 +3351,7 @@ class CameraTots
 
     void Terminate()
     {
-        fprintf(stderr,"Terminate camera..\n");
+        fprintf(stderr, "Terminate camera..\n");
         // stop capturing video with the camera
         {
             camera.capture(Camera::OPORT_VIDEO, OMX_FALSE);
@@ -3378,7 +3363,7 @@ class CameraTots
 
             //encoder.callFillThisBuffer();
         }
-        fprintf(stderr,"Terminate camera..Flushing\n");
+        fprintf(stderr, "Terminate camera..Flushing\n");
         // flush the buffers on each component
         {
             camera.flushPort();
@@ -3386,7 +3371,7 @@ class CameraTots
                 videorender.flushPort();
             encoder.flushPort();
         }
-        fprintf(stderr,"Terminate camera..Disableport\n");
+        fprintf(stderr, "Terminate camera..Disableport\n");
         // disable all the ports
         {
 
@@ -3402,14 +3387,14 @@ class CameraTots
             //videorender.disablePort();
             //camera.disablePort();
         }
-        fprintf(stderr,"Terminate camera..Free\n");
+        fprintf(stderr, "Terminate camera..Free\n");
         // free all the buffers
         {
             camera.freeBuffers();
             //videorender.freeBuffers();
             encoder.freeBuffers();
         }
-        fprintf(stderr,"Terminate camera..idle\n");
+        fprintf(stderr, "Terminate camera..idle\n");
         // transition all the components to idle states
         {
             camera.switchState(OMX_StateIdle);
@@ -3448,9 +3433,10 @@ class PictureTots
     VncClient *pvncclient;
     ffmpegsrc *pffmpeg;
     struct timespec InitTime;
-    
+
     AudioEncoder audioencoder;
-    bool TxAudio=false;
+    bool TxAudio = false;
+
   public:
     static const int Mode_PATTERN = 0;
     static const int Mode_V4L2 = 1;
@@ -3459,7 +3445,7 @@ class PictureTots
     static const int Mode_FFMPEG = 4;
 
   public:
-    void Init(VideoFromat &VideoFormat, char *FileName, char *Udp, int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0, int ModeInput = Mode_PATTERN, char *Extra = NULL,char *audiofilename=NULL,size_t audiobitrate=32000)
+    void Init(VideoFromat &VideoFormat, char *FileName, char *Udp, int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0, int ModeInput = Mode_PATTERN, char *Extra = NULL, char *audiofilename = NULL, size_t audiobitrate = 32000)
     {
         last_time.tv_sec = 0;
         last_time.tv_nsec = 0;
@@ -3468,12 +3454,12 @@ class PictureTots
         DelayPTS = SetDelayPts;
         EncVideoBitrate = VideoBitrate;
         Mode = ModeInput;
-        
-        TxAudio=(audiofilename!=NULL);
-        if(TxAudio)
+
+        TxAudio = (audiofilename != NULL);
+        if (TxAudio)
         {
-            TxAudio=audioencoder.SetWavFile(audiofilename);
-            TxAudio=audioencoder.SetBitRate(audiobitrate);
+            TxAudio = audioencoder.SetWavFile(audiofilename);
+            TxAudio = audioencoder.SetBitRate(audiobitrate);
         }
 
         if (Mode == Mode_V4L2)
@@ -3481,7 +3467,7 @@ class PictureTots
             pwebcam = new Webcam(Extra);
             int CamWidth, CamHeight;
             pwebcam->GetCameraSize(CamWidth, CamHeight);
-            fprintf(stderr,"Resizer input = %d x %d\n", CamWidth, CamHeight);
+            fprintf(stderr, "Resizer input = %d x %d\n", CamWidth, CamHeight);
 
             resizer.setupOutputPort(CamWidth, CamHeight, VideoFormat, OMX_COLOR_FormatYUV420PackedPlanar);
         }
@@ -3495,18 +3481,18 @@ class PictureTots
             int DisplayWidth, DisplayHeight, Rotate;
 
             pgrabdisplay->GetDisplaySize(DisplayWidth, DisplayHeight, Rotate);
-            fprintf(stderr,"Resizer input = %d x %d\n", DisplayWidth, DisplayHeight);
+            fprintf(stderr, "Resizer input = %d x %d\n", DisplayWidth, DisplayHeight);
             resizer.setupOutputPort(DisplayWidth, DisplayHeight, VideoFormat, OMX_COLOR_Format32bitABGR8888);
         }
         if (Mode == Mode_VNCCLIENT)
         {
-            fprintf(stderr,"Connecting to VNCSERVER %s...\n", Extra);
+            fprintf(stderr, "Connecting to VNCSERVER %s...\n", Extra);
 
             pvncclient = new VncClient(Extra, "datv");
             int DisplayWidth, DisplayHeight, Rotate;
 
             pvncclient->GetDisplaySize(DisplayWidth, DisplayHeight, Rotate);
-            fprintf(stderr,"Resizer input = %d x %d\n", DisplayWidth, DisplayHeight);
+            fprintf(stderr, "Resizer input = %d x %d\n", DisplayWidth, DisplayHeight);
             resizer.setupOutputPort(DisplayWidth, DisplayHeight, VideoFormat, OMX_COLOR_Format32bitABGR8888);
         }
         if (Mode == Mode_FFMPEG)
@@ -3540,7 +3526,7 @@ class PictureTots
         encoder.setLowLatency();
         encoder.setSeparateNAL();
         encoder.setMinizeFragmentation(); // Minimize frag seems to block at high resolution : to inspect*/
-        encoder.setVuiParameters(1,1); //PixelAspect
+        encoder.setVuiParameters(1, 1);   //PixelAspect
         if (RowBySlice)
             encoder.setMultiSlice(RowBySlice, OMX_VIDEO_IntraRefreshCyclic /*OMX_VIDEO_IntraRefreshBoth*/);
 
@@ -3557,7 +3543,7 @@ class PictureTots
         // With Main Profile : have more skipped frame
         tsencoder.SetOutput(FileName, Udp);
         tsencoder.ConstructTsTree(VideoBitrate, TsBitrate, PMTPid, sdt, fps, 1);
-        fprintf(stderr,"Ts bitrate = %d\n", TsBitrate);
+        fprintf(stderr, "Ts bitrate = %d\n", TsBitrate);
 
         ERR_OMX(OMX_SetupTunnel(resizer.component(), Resizer::OPORT, encoder.component(), Encoder::IPORT), "tunnel resizer.output -> encoder.input (low)");
 
@@ -3595,7 +3581,7 @@ class PictureTots
         {
             pffmpeg->SetOmxBuffer((unsigned char *)resizer.inBuffer().data());
         }
-        fprintf(stderr,"Allocsize= %d\n", resizer.inBuffer().allocSize());
+        fprintf(stderr, "Allocsize= %d\n", resizer.inBuffer().allocSize());
         encoder.allocBuffers(false); //Only  Bufout
 
         // switch state of the components prior to starting
@@ -3624,7 +3610,7 @@ class PictureTots
         if (BigToSleepns < KERNEL_GRANULARITY)
         {
             last_time = gettime_now;
-            fprintf(stderr,"I am late %ld\n",BigToSleepns);
+            fprintf(stderr, "I am late %ld\n", BigToSleepns);
             return;
         }
 
@@ -3737,8 +3723,8 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
             {
                 int RealWidthMB = ((CurrentVideoFormat.width >> 5) << 5) >> 4;
                 int RealHeightMB = ((CurrentVideoFormat.height >> 4) << 4) >> 4;
-//#define couleur(param) fprintf(stderr,"\033[%dm", param)
-                fprintf(stderr,"\033[H\033[2J");
+                //#define couleur(param) fprintf(stderr,"\033[%dm", param)
+                fprintf(stderr, "\033[H\033[2J");
                 //int LenVector=encBuffer.dataSize();
                 //fprintf(stderr,"X %d Y %d Keyframe %d LenVector %d\n",RealWidthMB,RealHeightMB,key_frame,LenVector);
                 for (int j = 0; j < RealHeightMB; j++)
@@ -3753,11 +3739,11 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                         {
                             int intensity = (7 * MotionAmplitude) / 256 + 31;
                             couleur(intensity);
-                            fprintf(stderr,"*");
+                            fprintf(stderr, "*");
                         }
                         else
                         {
-                            fprintf(stderr," ");
+                            fprintf(stderr, " ");
                         }
                     }
                     couleur(37);
@@ -3769,14 +3755,14 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                         if (SAD > 16000)
                         {
 
-                            fprintf(stderr,"*");
+                            fprintf(stderr, "*");
                         }
                         else
                         {
-                            fprintf(stderr," ");
+                            fprintf(stderr, " ");
                         }
                     }
-                    fprintf(stderr,"\n");
+                    fprintf(stderr, "\n");
                 }
                 encBuffer.setFilled(false);
                 encoder.callFillThisBuffer();
@@ -3813,40 +3799,26 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
 
                 //Now Audio
                 // *********** AUDIO ******************
-                if(TxAudio)
+                if (TxAudio)
                 {
-                    static float TimeAudio = 0.0;
-                    //float VideoFrameDuration = 1.0 / (float)Videofps;
-                    while (TimeAudio < tsencoder.vpts/90000.0) //fixme 40 depend framerate
+                    while (audioencoder.EncodeFrame()) //fixme 40 depend framerate
                     {
-                        //fprintf(stderr,"TimeAudio %f keyframe %f\n",TimeAudio,tsencoder.vpts/90000.0);
-                        if (audioencoder.EncodeFrame())
-                        {
-
-                            tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -DelayPTS+200 /*,&gettime_now*/);
-                            TimeAudio += 2048.0 / 48000.0;
-                        }
-                        else
-                            fprintf(stderr, "incomplete\n");
+                        tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
                     }
-                }    
+                }
             }
             else
             {
                 //usleep_exactly(1e6/(2*Videofps));
                 key_frame++; //Skipped Frame, key_frame++ to allow correct timing for next valid frames
-                fprintf(stderr,"!%ld\n", key_frame);
+                fprintf(stderr, "!%ld\n", key_frame);
             }
 
-
-            
             // Buffer flushed, request a new buffer to be filled by the encoder component
             encBuffer.setFilled(false);
             //PictureBuffer.setFilled(true);
             encoder.callFillThisBuffer();
 
-            
-            
             return;
         }
         if (!want_quit && (FirstTime || PictureBuffer.filled()))
@@ -3872,18 +3844,17 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
             }
             if (Mode == Mode_GRABDISPLAY)
             {
-                struct timespec gettime_now,first_time;
-				long time_difference;
-				clock_gettime(CLOCK_REALTIME, &first_time);
-					
-				pgrabdisplay->GetPicture();
-				clock_gettime(CLOCK_REALTIME, &gettime_now);
-				time_difference = gettime_now.tv_nsec - first_time.tv_nsec;
-				if (time_difference < 0)
-					time_difference += 1E9;
-				fprintf(stderr,"Grab time=%ld us\n",time_difference/1000);
+                struct timespec gettime_now, first_time;
+                long time_difference;
+                clock_gettime(CLOCK_REALTIME, &first_time);
 
-               
+                pgrabdisplay->GetPicture();
+                clock_gettime(CLOCK_REALTIME, &gettime_now);
+                time_difference = gettime_now.tv_nsec - first_time.tv_nsec;
+                if (time_difference < 0)
+                    time_difference += 1E9;
+                fprintf(stderr, "Grab time=%ld us\n", time_difference / 1000);
+
                 int DisplayWidth, DisplayHeight, Rotate;
 
                 pgrabdisplay->GetDisplaySize(DisplayWidth, DisplayHeight, Rotate);
@@ -4051,8 +4022,8 @@ int main(int argc, char **argv)
     char *ExtraArg = NULL;
     char *sdt = "F5OEO";
     char *audiofile = NULL;
-    int pidpmt = 255;//, pidvideo = 256, pidaudio = 257;
-    size_t audiobitrate=32000;
+    int pidpmt = 255; //, pidvideo = 256, pidaudio = 257;
+    size_t audiobitrate = 32000;
 
 #define CAMERA 0
 #define PATTERN 1
@@ -4087,7 +4058,7 @@ int main(int argc, char **argv)
             break;
         case 'm': // Mux
             MuxBitrate = atoi(optarg);
-            fprintf(stderr,"\nAvc2ts bitrate=%d\n", MuxBitrate);
+            fprintf(stderr, "\nAvc2ts bitrate=%d\n", MuxBitrate);
             break;
         case 'h': // help
             print_usage();
@@ -4135,10 +4106,10 @@ int main(int argc, char **argv)
             break;
         case 'a': //Audio AAC
             audiofile = optarg;
-        break;
+            break;
         case 'z': //Audio AAC
             audiobitrate = atoi(optarg);
-        break;
+            break;
         case -1:
             break;
         case '?':
@@ -4198,53 +4169,52 @@ else
         CameraTots *cameratots = NULL;
         PictureTots *picturetots = NULL;
         H264tots *h264tots = NULL;
-                  
-            int PictureMode = PictureTots::Mode_PATTERN;
-            switch (TypeInput)
-            {
-                case 0:
-                cameratots = new CameraTots;
-                cameratots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors,audiofile,audiobitrate);
-                break;
-            case PATTERN:
-                PictureMode = PictureTots::Mode_PATTERN;
-                picturetots = new PictureTots;
-                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg,audiofile,audiobitrate);
-                break;
-            case USB_CAMERA:
-                PictureMode = PictureTots::Mode_V4L2;
-                if (ExtraArg == NULL)
-                    ExtraArg = "/dev/video0";
-                picturetots = new PictureTots;
-                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg,audiofile,audiobitrate);    
-                break;
-            case DISPLAY:
-                PictureMode = PictureTots::Mode_GRABDISPLAY;
-                picturetots = new PictureTots;
-                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg,audiofile,audiobitrate);
-                break;
-            case VNC:
-                PictureMode = PictureTots::Mode_VNCCLIENT;
-                if (ExtraArg == NULL)
-                {
-                    fprintf(stderr,"IP of VNCServer should be set with -e option\n");
-                    exit(0);
-                }
-                picturetots = new PictureTots;
-                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg,audiofile,audiobitrate);
-                break;
-            case FFMPEG:
-                PictureMode = PictureTots::Mode_FFMPEG;
-                picturetots = new PictureTots;
-                picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg,audiofile,audiobitrate);
+
+        int PictureMode = PictureTots::Mode_PATTERN;
+        switch (TypeInput)
+        {
+        case 0:
+            cameratots = new CameraTots;
+            cameratots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, audiofile, audiobitrate);
             break;
-            case H264IN:
+        case PATTERN:
+            PictureMode = PictureTots::Mode_PATTERN;
+            picturetots = new PictureTots;
+            picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg, audiofile, audiobitrate);
+            break;
+        case USB_CAMERA:
+            PictureMode = PictureTots::Mode_V4L2;
+            if (ExtraArg == NULL)
+                ExtraArg = "/dev/video0";
+            picturetots = new PictureTots;
+            picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg, audiofile, audiobitrate);
+            break;
+        case DISPLAY:
+            PictureMode = PictureTots::Mode_GRABDISPLAY;
+            picturetots = new PictureTots;
+            picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg, audiofile, audiobitrate);
+            break;
+        case VNC:
+            PictureMode = PictureTots::Mode_VNCCLIENT;
+            if (ExtraArg == NULL)
+            {
+                fprintf(stderr, "IP of VNCServer should be set with -e option\n");
+                exit(0);
+            }
+            picturetots = new PictureTots;
+            picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg, audiofile, audiobitrate);
+            break;
+        case FFMPEG:
+            PictureMode = PictureTots::Mode_FFMPEG;
+            picturetots = new PictureTots;
+            picturetots->Init(CurrentVideoFormat, OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice, EnableMotionVectors, PictureMode, ExtraArg, audiofile, audiobitrate);
+            break;
+        case H264IN:
             h264tots = new H264tots;
             h264tots->Init("transcode.264", OutputFileName, NetworkOutput, VideoBitrate, MuxBitrate, DelayPTS, pidpmt, sdt, VideoFramerate, IDRPeriod, RowBySlice);
-            break;    
-            }
-            
-        
+            break;
+        }
+
 #if 1
         signal(SIGINT, signal_handler);
         signal(SIGTERM, signal_handler);
@@ -4258,11 +4228,14 @@ else
         while (1)
         {
 
-            if (TypeInput == 0) cameratots->Run(want_quit);
-            
-            if((TypeInput>=PATTERN)&&(TypeInput<=FFMPEG))    picturetots->Run(want_quit);
+            if (TypeInput == 0)
+                cameratots->Run(want_quit);
 
-            if(TypeInput==H264IN)    h264tots->Run(want_quit);
+            if ((TypeInput >= PATTERN) && (TypeInput <= FFMPEG))
+                picturetots->Run(want_quit);
+
+            if (TypeInput == H264IN)
+                h264tots->Run(want_quit);
             if (want_quit /*&& (encBufferLow.flags() & OMX_BUFFERFLAG_SYNCFRAME)*/)
             {
                 std::cerr << "Clean Exiting avc2ts" << std::endl;
@@ -4283,17 +4256,16 @@ else
             cameratots->Terminate();
             delete (cameratots);
         }
-       if((TypeInput>=PATTERN)&&(TypeInput<=FFMPEG))
+        if ((TypeInput >= PATTERN) && (TypeInput <= FFMPEG))
         {
             picturetots->Terminate();
             delete (picturetots);
         }
-        if(TypeInput==H264IN)
+        if (TypeInput == H264IN)
         {
             h264tots->Terminate();
             delete (h264tots);
         }
-
     }
     catch (const OMXExeption &e)
     {
