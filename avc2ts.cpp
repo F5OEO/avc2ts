@@ -48,6 +48,7 @@ extern "C"
 #include "grabdisplay.h"
 #include "vncclient.h"
 #include "ffmpegsrc.h"
+#include "b101.h"
 
 //#include <linux/videodev2.h>
 
@@ -1109,6 +1110,32 @@ class Camera : public Component
         //setFramerate(videoFormat.framerate);
     }
 
+    void setVideoFromatB101(const VideoFromat &videoFormat, bool VideoPreview = false)
+    {
+        Parameter<OMX_PARAM_PORTDEFINITIONTYPE> portDef;
+        getPortDefinition(OPORT_VIDEO, portDef);
+
+        portDef->format.video.nFrameWidth = videoFormat.width;
+        portDef->format.video.nFrameHeight = videoFormat.height;
+        portDef->format.video.xFramerate = videoFormat.framerate << 16;
+        portDef->format.video.nStride = align(portDef->format.video.nFrameWidth, 16);
+        portDef->format.video.nSliceHeight = align(videoFormat.height, 16);
+        portDef->format.video.eColorFormat = OMX_COLOR_Format24bitRGB888 ;
+        //printf("portDef->nBufferCountActual %d\n",portDef->nBufferCountActual);
+        setPortDefinition(OPORT_VIDEO, portDef);
+        if (VideoPreview)
+        {
+            getPortDefinition(OPORT_PREVIEW, portDef);
+            portDef->format.video.nFrameWidth = videoFormat.width;
+            portDef->format.video.nFrameHeight = videoFormat.height;
+            portDef->format.video.xFramerate = videoFormat.framerate << 16;
+            portDef->format.video.nStride = align(portDef->format.video.nFrameWidth, 16);
+            portDef->format.video.eColorFormat = OMX_COLOR_Format24bitRGB888 ;
+            setPortDefinition(OPORT_PREVIEW, portDef);
+        }
+        //setFramerate(videoFormat.framerate);
+    }
+
     void setFramerate(unsigned fps)
     {
         Parameter<OMX_CONFIG_FRAMERATETYPE> framerate;
@@ -1356,7 +1383,7 @@ class Encoder : public Component
         portDef->format.video.xFramerate = framerate << 16;
         portDef->nBufferSize = 256000; //By default 65536, but increased for high resolution with big I pictures
                                        //printf("FPS from output=%x\n",portDef->format.video.xFramerate);
-        fprintf(stderr, "Aligned = %d Stride= %d\n", portDef->nBufferAlignment, portDef->format.video.nStride);
+        fprintf(stderr, "%d x %d Aligned = %d Stride= %d\n",Videoformat.width,Videoformat.height, portDef->nBufferAlignment, portDef->format.video.nStride);
         setPortDefinition(OPORT, portDef);
     }
 
@@ -2377,7 +2404,7 @@ class TSEncaspulator
                                   42,                     //4.0 - 4.0 is maximum level on raspberry , however, need 4.2 for 90 fps
                                   AVC_HIGH,               //Fixme should pass Profile and Level
                                   tsmain.muxrate - 10000, //VideoBitrate,
-                                  40000,                  //Fix Me : should have to be calculated
+                                  400000,                  //Fix Me : should have to be calculated
                                   Videofps);
         if (IsAudioPresent == 1)
         {
@@ -2604,7 +2631,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
 ..
 */
 //if(size<100) {fprintf(stderr,"!");return;}
-#define MAX_DRIFT_MS 200
+#define MAX_DRIFT_MS 400
         static uint64_t AudioFrame = 0;
         ts_frame_t tsframe;
 
@@ -2893,13 +2920,19 @@ class AudioEncoder
             int ret = ioctl(fileno(AudioIn), FIONREAD, &n);
             if ((ret < 0) || (n < 2048 * 2 * 2))
             {
-                memset(inputBuffer, 0, sizeof(inputBuffer));
+                //memset(inputBuffer, 0, sizeof(inputBuffer));
                 //fprintf(stderr,"Fill audio\n");
                 return false;
                 //memcpy(inputBuffer,SinBuffer,sizeof(inputBuffer));
             }
             else
+            {
+               /* if(n>32000)*/ 
+               int BlockAvailable=n/(2048*2*2);
+               //fprintf(stderr,"Audio pipe input block %d\n",BlockAvailable);
+               for(int i=0;i<BlockAvailable;i++) // Purge old message first
                 ret = fread(inputBuffer, 2, 2048 * 2, AudioIn);
+            }   
         }
         else
             memcpy(inputBuffer, SinBuffer, sizeof(inputBuffer));
@@ -3053,11 +3086,17 @@ class CameraTots
     AudioEncoder audioencoder;
     int Videofps;
     bool TxAudio = false;
+    B101 myb101;
 
   public:
     void Init(VideoFromat &VideoFormat, char *FileName, char *Udp, int VideoBitrate, int TsBitrate, int SetDelayPts, int PMTPid, char *sdt, int fps = 25, int IDRPeriod = 100, int RowBySlice = 0, int EnableMotionVectors = 0, char *audiofilename = NULL, size_t audiobitrate = 32000)
     {
         TxAudio = (audiofilename != NULL);
+        if(myb101.IsPresent())
+        {
+            myb101.Init();
+
+        }
         if (TxAudio)
         {
             TxAudio = audioencoder.SetWavFile(audiofilename);
@@ -3069,11 +3108,27 @@ class CameraTots
         DelayPTS = SetDelayPts;
         // configuring camera
         Videofps = fps;
-        camera.setVideoFromat(VideoFormat, VideoPreview);
+        if(myb101.IsPresent())
+        {
+            VideoFromat B101VideoFormat;
+            B101VideoFormat.width=myb101.width;
+            B101VideoFormat.height=myb101.height;
+            B101VideoFormat.framerate=myb101.fps;
+            myb101.Start();
+            camera.setVideoFromat(B101VideoFormat, VideoPreview);
+           // camera.setVideoFromatB101(VideoFormat, VideoPreview);
+        }
+        else
+        {
+            camera.setVideoFromat(VideoFormat, VideoPreview);
+        }
+        
+        
 
         camera.setImageDefaults();
         camera.getSensorModes();
         camera.getSensorCameraMode();
+
         camera.setImageFilter(OMX_ALL, OMX_ImageFilterNoise);
 
         while (!camera.ready())
@@ -3104,10 +3159,13 @@ class CameraTots
 
 	}
 	else*/
-            {
+            if(myb101.IsPresent())
+                encoder.setupOutputPort( VideoFormat, VideoBitrate,VideoFormat.framerate);
+            else    
                 encoder.setupOutputPortFromCamera(portDef, VideoBitrate);
-                encoder.setBitrate(VideoBitrate, OMX_Video_ControlRateVariable /*OMX_Video_ControlRateVariable*/ /*OMX_Video_ControlRateConstantSkipFrames*/ /*OMX_Video_ControlRateConstant*/);
-            }
+
+            encoder.setBitrate(VideoBitrate, OMX_Video_ControlRateVariable /*OMX_Video_ControlRateVariable*/ /*OMX_Video_ControlRateConstantSkipFrames*/ /*OMX_Video_ControlRateConstant*/);
+            
 
             encoder.setCodec(OMX_VIDEO_CodingAVC);
             m_IDRPeriod = IDRPeriod;
@@ -3333,7 +3391,9 @@ class CameraTots
                 return; //We surely have an other buffer : get it immediately
             }
 
-            // *********** AUDIO ******************
+            
+        }
+        // *********** AUDIO ******************
             if (TxAudio)
             {
 
@@ -3341,8 +3401,8 @@ class CameraTots
                 {
                     tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
                 }
+                return;
             }
-        }
         //===== test Audio =====
         //#define WITH_AUDIO 1
 
