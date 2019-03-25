@@ -17,6 +17,7 @@ class B101
     */
   private:
      int i2c_fd=NULL;
+     bool b101detected=false;
    public:  
       unsigned int width, height, fps, frame_interval;
       unsigned int frame_width, frame_height;

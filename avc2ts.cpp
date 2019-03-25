@@ -3110,12 +3110,15 @@ class CameraTots
         Videofps = fps;
         if(myb101.IsPresent())
         {
-            VideoFromat B101VideoFormat;
+            /*VideoFromat B101VideoFormat;
             B101VideoFormat.width=myb101.width;
             B101VideoFormat.height=myb101.height;
             B101VideoFormat.framerate=myb101.fps;
-            myb101.Start();
             camera.setVideoFromat(B101VideoFormat, VideoPreview);
+            */
+           
+             camera.setVideoFromat(VideoFormat, VideoPreview);
+             myb101.Start();
            // camera.setVideoFromatB101(VideoFormat, VideoPreview);
         }
         else
@@ -3159,9 +3162,9 @@ class CameraTots
 
 	}
 	else*/
-            if(myb101.IsPresent())
+            /*if(myb101.IsPresent())
                 encoder.setupOutputPort( VideoFormat, VideoBitrate,VideoFormat.framerate);
-            else    
+            else*/    
                 encoder.setupOutputPortFromCamera(portDef, VideoBitrate);
 
             encoder.setBitrate(VideoBitrate, OMX_Video_ControlRateVariable /*OMX_Video_ControlRateVariable*/ /*OMX_Video_ControlRateConstantSkipFrames*/ /*OMX_Video_ControlRateConstant*/);

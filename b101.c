@@ -81,7 +81,7 @@ struct sensor_regs {
 #define CSI_IMAGE_ID 0x24
 
 
-static void i2c_rd(int fd, uint16_t reg, uint8_t *values, uint32_t n)
+static bool i2c_rd(int fd, uint16_t reg, uint8_t *values, uint32_t n)
 {
    int err;
    uint8_t buf[2] = { reg >> 8, reg & 0xff };
@@ -106,8 +106,12 @@ static void i2c_rd(int fd, uint16_t reg, uint8_t *values, uint32_t n)
 
    err = ioctl(fd, I2C_RDWR, &msgset);
    if(err != msgset.nmsgs)
+   {
       fprintf(stderr,"\n%s: reading register 0x%x from 0x%x failed, err %d\n",
             __func__, reg, I2C_ADDR, err);
+            return false;
+   }
+   return true;         
 }
 
 static void i2c_wr(int fd, uint16_t reg, uint8_t *values, uint32_t n)
@@ -563,21 +567,32 @@ B101::B101()
    i2c_fd = open("/dev/i2c-0", O_RDWR);
    if (!i2c_fd)
    {
-      fprintf(stderr,"\nCouldn't open B101 I2C device");
-      
+      //fprintf(stderr,"\nCouldn't open B101 I2C device");
+      return;
    }
    if(ioctl(i2c_fd, I2C_SLAVE, 0x0F) < 0)
    {
-      fprintf(stderr,"\nFailed to set B101 I2C address");
-      
+      //fprintf(stderr,"\nFailed to set B101 I2C address");
+      return;
    }
 
    usleep(500000); //Wait to get I2C up
+   for(int i=0;i<10;i++)
+   {
+      u8 val;
+      if(i2c_rd(i2c_fd, CHIPID, &val, 1)) 
+      {
+         b101detected=true;
+         fprintf(stderr,"\nb101 detected\n");
+         break;
+      }
+      usleep(100000);
+   }
 }
 
 bool B101::IsPresent()
 {
-   return (i2c_fd!=NULL);
+   return (b101detected);
 }
 
 bool B101::Init()
