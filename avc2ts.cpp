@@ -53,6 +53,7 @@ extern "C"
 //#include <linux/videodev2.h>
 
 #define PROGRAM_VERSION "1.0.0"
+#define AUDIO_SAMPLERATE 24000
 
 // Problem with delay increasing : https://www.raspberrypi.org/forums/viewtopic.php?f=43&t=133446
 // Introductio to IL Component : http://fr.slideshare.net/pchethan/understanding-open-max-il-18376762
@@ -2397,14 +2398,17 @@ class TSEncaspulator
             //audio_frame_size - size of one audio frame in 90KHz ticks. (e.g. for ac3 1536 * 90000/samplerate )
             //stream->audio_frame_size = (double)encoder->num_samples * 90000LL * output_stream->ts_opts.frames_per_pes / input_stream->sample_rate;
             //ts_stream[1].audio_frame_size = 2048 * 90000 / 48000; // To be calculated from bitrate : fixme !
-            ts_stream[1].audio_frame_size =  (2048/48000.0)*(audiobitrate)/8*90000 ; // To be calculated from bitrate : fixme !
+            int calculatedframeSize=(2048*audiobitrate/1000)/(AUDIO_SAMPLERATE/1000);
+            ts_stream[1].audio_frame_size =  (calculatedframeSize/8)*90000 ; 
+            fprintf(stderr,"Bitrate %d Ts audio frame calculated %d %d\n",audiobitrate,calculatedframeSize,ts_stream[1].audio_frame_size/90000);
+                
         }
         ts_setup_transport_stream(writer, &tsmain);
         ts_setup_sdt(writer);
         ts_setup_mpegvideo_stream(writer, VideoPid,
                                   42,                     //4.0 - 4.0 is maximum level on raspberry , however, need 4.2 for 90 fps
                                   AVC_HIGH,               //Fixme should pass Profile and Level
-                                  tsmain.muxrate - 10000, //VideoBitrate,
+                                  IsAudioPresent?tsmain.muxrate - 10000 - audiobitrate:tsmain.muxrate - 10000, //VideoBitrate,
                                   400000,                  //Fix Me : should have to be calculated
                                   Videofps);
         if (IsAudioPresent == 1)
@@ -2644,7 +2648,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         tsframe.pid = AudioPid;
         tsframe.random_access = 1;
         //pts_increment=(2048*90.0)/48.0;
-        pts_increment = (2048 * 90.0 * 1000) / 48000.0;
+        pts_increment = (2048 * 90.0 * 1000) / (float) AUDIO_SAMPLERATE;
         static int64_t OffsetFromVideo = 0;
 
         int64_t DriftAudio = vpts - (AudioFrame * pts_increment + OffsetFromVideo);
@@ -2795,7 +2799,7 @@ class AudioEncoder
     UCHAR outputbuffer[20480];
     AACENC_BufDesc inBufDesc;
 
-    int WavSampleRate = 48000;
+    int WavSampleRate = AUDIO_SAMPLERATE;
     int mode = MODE_2; //Stereo
     int bitrate = 20000;
     AACENC_InfoStruct info = {0};
@@ -3213,7 +3217,7 @@ class CameraTots
                                                                //encoder.setLevelExtension(VideoBitrate/1000);
             // With Main Profile : have more skipped frame
             tsencoder.SetOutput(FileName, Udp);
-            tsencoder.ConstructTsTree(VideoBitrate, TsBitrate, PMTPid, sdt, fps, 1);
+            tsencoder.ConstructTsTree(VideoBitrate, TsBitrate, PMTPid, sdt, fps, 1,audiobitrate);
             EncVideoBitrate = VideoBitrate;
 
             // encoder.setPeakRate(VideoBitrate*1.1);
@@ -3616,7 +3620,7 @@ class PictureTots
         encoder.setQPLimits(1, 51); // To have high bitrate even at low fps and size : for Now a MUST
         // With Main Profile : have more skipped frame
         tsencoder.SetOutput(FileName, Udp);
-        tsencoder.ConstructTsTree(VideoBitrate, TsBitrate, PMTPid, sdt, fps, 1);
+        tsencoder.ConstructTsTree(VideoBitrate, TsBitrate, PMTPid, sdt, fps, 1,audiobitrate);
         fprintf(stderr, "Ts bitrate = %d\n", TsBitrate);
 
         ERR_OMX(OMX_SetupTunnel(resizer.component(), Resizer::OPORT, encoder.component(), Encoder::IPORT), "tunnel resizer.output -> encoder.input (low)");
