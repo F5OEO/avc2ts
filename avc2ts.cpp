@@ -2396,7 +2396,8 @@ class TSEncaspulator
             ts_stream[1].audio_type = LIBMPEGTS_AUDIO_SERVICE_UNDEFINED;
             //audio_frame_size - size of one audio frame in 90KHz ticks. (e.g. for ac3 1536 * 90000/samplerate )
             //stream->audio_frame_size = (double)encoder->num_samples * 90000LL * output_stream->ts_opts.frames_per_pes / input_stream->sample_rate;
-            ts_stream[1].audio_frame_size = 2048 * 90000 / 48000; // To be calculated from bitrate : fixme !
+            //ts_stream[1].audio_frame_size = 2048 * 90000 / 48000; // To be calculated from bitrate : fixme !
+            ts_stream[1].audio_frame_size =  (2048/48000.0)*(audiobitrate)/8*90000 ; // To be calculated from bitrate : fixme !
         }
         ts_setup_transport_stream(writer, &tsmain);
         ts_setup_sdt(writer);
@@ -2552,7 +2553,7 @@ class TSEncaspulator
             {
 
                 ret = ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
-
+                //fprintf(stderr,"Video\n");
                 if ((ret == 0) && len)
                 {
 
@@ -2680,7 +2681,7 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         tsframe.pts = pts_increment * AudioFrame + OffsetFromVideo + DelayPTS * 90LL; //  pts_increment*AudioFrame+DelayPTS*90L;
                                                                                       //fprintf(stderr,"Keyframe %lld Video dts=%lld,pts=%lld Audio Size = %d dts=%lld,pts=%lld\n",key_frame, vdts / 90, vpts / 90,size, tsframe.dts / 90, tsframe.pts / 90);
         /*int ret =*/ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
-
+        //fprintf(stderr,"Audio\n");
         /*if ((ret==0)&&len)
 			{
 				
@@ -2800,6 +2801,7 @@ class AudioEncoder
     AACENC_InfoStruct info = {0};
     AACENC_BufDesc outBufDesc;
     FILE *AudioIn = NULL;
+    int NbFrameEncoded=0;
 
   public:
     int FrameSize = 0;
@@ -2927,11 +2929,20 @@ class AudioEncoder
             }
             else
             {
-               /* if(n>32000)*/ 
+             
                int BlockAvailable=n/(2048*2*2);
                //fprintf(stderr,"Audio pipe input block %d\n",BlockAvailable);
-               for(int i=0;i<BlockAvailable;i++) // Purge old message first
-                ret = fread(inputBuffer, 2, 2048 * 2, AudioIn);
+               if(NbFrameEncoded<20)
+               {
+                   fread(inputBuffer, 2, 2048 * 2, AudioIn);
+                   NbFrameEncoded++;
+                   return false; //Purge starting audio buffer
+               }
+               else
+               {
+                   ret = fread(inputBuffer, 2, 2048 * 2, AudioIn);
+                   NbFrameEncoded++;
+               }   
             }   
         }
         else
@@ -2939,7 +2950,7 @@ class AudioEncoder
         AACENC_ERROR err;
         AACENC_InArgs in_args = {0};
         AACENC_OutArgs out_args = {0};
-        in_args.numInSamples = 2048 * 2; //44100*40ms
+        in_args.numInSamples = 2048 * 2; //2048 Stereo
 
         void *inBuffer[] = {inputBuffer};
         INT inBufferIds[] = {IN_AUDIO_DATA};
@@ -2984,7 +2995,7 @@ class AudioEncoder
 
             EncodedFrame = outputbuffer; //To check
             FrameSize = out_args.numOutBytes;
-
+            //fprintf(stderr,"Audio framesize=%d\n",FrameSize);
             return true;
         }
     }
@@ -3359,7 +3370,7 @@ class CameraTots
             else
             {
                 key_frame++; //Skipped Frame, key_frame++ to allow correct timing for next valid frames
-                fprintf(stderr, "!");
+                fprintf(stderr, "Skip frame!\n");
             }
             /* if(m_RowBySlice) //No I picture with this mode ?!
                 {
@@ -3402,7 +3413,7 @@ class CameraTots
 
                 while (audioencoder.EncodeFrame()) //fixme 40 depend framerate
                 {
-                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
+                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS /*,&gettime_now*/);
                 }
                 return;
             }
@@ -3866,7 +3877,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                 {
                     while (audioencoder.EncodeFrame()) //fixme 40 depend framerate
                     {
-                        tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
+                        tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS /*,&gettime_now*/);
                     }
                 }
             }
