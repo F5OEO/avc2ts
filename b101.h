@@ -16,7 +16,7 @@ class B101
     int GetPicture(int fps);
     */
   private:
-     int i2c_fd=NULL;
+     int i2c_fd=0;
      bool b101detected=false;
    public:  
       unsigned int width, height, fps, frame_interval;

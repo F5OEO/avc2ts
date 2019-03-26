@@ -2930,7 +2930,7 @@ class AudioEncoder
             else
             {
              
-               int BlockAvailable=n/(2048*2*2);
+               //int BlockAvailable=n/(2048*2*2);
                //fprintf(stderr,"Audio pipe input block %d\n",BlockAvailable);
                if(NbFrameEncoded<20)
                {
@@ -3706,7 +3706,8 @@ class PictureTots
     {
         unsigned int i, j;
         frame = frame % 256;
-        OMX_U8 *y = buf, *u = y + CurrentVideoFormat.width * CurrentVideoFormat.height, *v = u + (CurrentVideoFormat.width >> 1) * (CurrentVideoFormat.height >> 1);
+        OMX_U8 *y = buf, *u = y + CurrentVideoFormat.width * CurrentVideoFormat.height;
+        //OMX_U8 *v = u + (CurrentVideoFormat.width >> 1) * (CurrentVideoFormat.height >> 1);
         memset(u, 0x80, (CurrentVideoFormat.width >> 1) * (CurrentVideoFormat.height));
         for (j = 0; j < CurrentVideoFormat.height; j++)
         {
