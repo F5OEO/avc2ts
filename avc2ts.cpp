@@ -3411,6 +3411,11 @@ class CameraTots
 
             
         }
+        else
+        {
+             usleep(1000);
+        }
+        
         // *********** AUDIO ******************
             if (TxAudio)
             {
@@ -3424,7 +3429,7 @@ class CameraTots
         //===== test Audio =====
         //#define WITH_AUDIO 1
 
-        usleep(1000);
+       
     }
 
     void Terminate()
@@ -3876,15 +3881,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
 
                 tsencoder.AddFrame(encBuffer.data(), encBuffer.dataSize(), OmxFlags, key_frame, DelayPTS /*,&gettime_now*/);
 
-                //Now Audio
-                // *********** AUDIO ******************
-                if (TxAudio)
-                {
-                    while (audioencoder.EncodeFrame()) //fixme 40 depend framerate
-                    {
-                        tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS /*,&gettime_now*/);
-                    }
-                }
+                
             }
             else
             {
@@ -3897,6 +3894,17 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
             encBuffer.setFilled(false);
             //PictureBuffer.setFilled(true);
             encoder.callFillThisBuffer();
+
+            // *********** AUDIO ******************
+            if (TxAudio)
+            {
+
+                while (audioencoder.EncodeFrame()) //fixme 40 depend framerate
+                {
+                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS /*,&gettime_now*/);
+                }
+                return;
+            }
 
             return;
         }
