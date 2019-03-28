@@ -3422,7 +3422,7 @@ class CameraTots
 
                 while (audioencoder.EncodeFrame()) //fixme 40 depend framerate
                 {
-                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS /*,&gettime_now*/);
+                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS-100 /*,&gettime_now*/);
                 }
                 return;
             }
