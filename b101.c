@@ -53,6 +53,9 @@ https://github.com/6by9/raspi_tc358743
 
 
 #include <linux/i2c-dev.h>
+#ifndef I2C_M_RD
+#include <linux/i2c.h>
+#endif
 
 
 
