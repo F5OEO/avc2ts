@@ -1859,6 +1859,18 @@ So the advice was for MMAL_VIDEO_INTRA_REFRESH_CYCLIC_MROWS and cir_mbs set prob
         //fprintf(stderr,"nCorruptMBs %d ",VideoStat->nCorruptMBs);
         fprintf(stderr, "Time %d ", (t.tv_sec - tbefore.tv_sec) * 1000ul + (t.tv_nsec - tbefore.tv_nsec) / 1000000);
         //printf("Bitrate %d",(VideoStat->nByteCount.nLowPart*8L)/(((t.tv_sec-tinitial.tv_sec)>0)?(t.tv_sec-tinitial.tv_sec):1));
+
+        Parameter<OMX_PARAM_U32TYPE> Dquant;
+        Dquant->nPortIndex = OPORT;
+        ERR_OMX(OMX_GetParameter(component_, OMX_IndexParamBrcmVideoRCSliceDQuant, &Dquant), " Get Dquant");
+        fprintf(stderr, "Dquant %d ",Dquant);
+
+        Parameter<OMX_PARAM_U32TYPE> EncodeQP;
+        EncodeQP->nPortIndex = OPORT;
+         ERR_OMX(OMX_GetParameter(component_, OMX_IndexParamBrcmVideoEncodeQpP, &EncodeQP), " Get QP");
+        fprintf(stderr, "EncodeQP %d ",EncodeQP);
+        
+
         fprintf(stderr, "\n");
         /*	fprintf(stderr,"VideoStat :Mem=%d ByteCount %d Buffer %d - Frame %d = %d Skip %d Discard %d Max Delta%d:%d TIME %li AverageBitrate=%d\n",MemStat,VideoStat->nByteCount.nLowPart,VideoStat->nBufferCount,VideoStat->nFrameCount,VideoStat->nBufferCount-VideoStat->nFrameCount*3,VideoStat->nFrameSkips,VideoStat->nDiscards,VideoStat->nMaxTimeDelta.nHighPart,VideoStat->nMaxTimeDelta.nLowPart,( t.tv_sec -tbefore.tv_sec  )*1000ul + ( t.tv_nsec - tbefore.tv_nsec)/1000000,(VideoStat->nByteCount.nLowPart*8L)/(((t.tv_sec-tinitial.tv_sec)>0)?(t.tv_sec-tinitial.tv_sec):1));*/
         tbefore = t;
@@ -2404,7 +2416,7 @@ class TSEncaspulator
 
             //LET'S CORRECT 
             int calculatedframeSize=(2048*1000)/(AUDIO_SAMPLERATE);
-            ts_stream[1].audio_frame_size =  (calculatedframeSize)*90 ; 
+            ts_stream[1].audio_frame_size =  (calculatedframeSize*2)*90 ; 
 
             fprintf(stderr,"Bitrate %d Ts audio frame calculated %d %d\n",audiobitrate,calculatedframeSize,ts_stream[1].audio_frame_size/90000);
                 
@@ -2414,7 +2426,7 @@ class TSEncaspulator
         ts_setup_mpegvideo_stream(writer, VideoPid,
                                   42,                     //4.0 - 4.0 is maximum level on raspberry , however, need 4.2 for 90 fps
                                   AVC_HIGH,               //Fixme should pass Profile and Level
-                                  IsAudioPresent?tsmain.muxrate - 10000 - audiobitrate:tsmain.muxrate - 10000, //VideoBitrate,
+                                  VideoBitrate*1.1, //VideoBitrate,
                                   400000,                  //Fix Me : should have to be calculated
                                   Videofps);
         if (IsAudioPresent == 1)
@@ -2434,6 +2446,9 @@ class TSEncaspulator
         int64_t ret;
         int len;
 
+        static int Statistic_Len=0;
+        static int Statistic_Frame=0;
+        
         //fprintf(stderr,"key_frame=%lld Size=%d Temps=%f\n",key_frame,size*8);
 
         if (InternalBufferSize + size > MAX_SIZE_PICTURE)
@@ -2484,11 +2499,13 @@ class TSEncaspulator
             tsframe.pid = VideoPid;
 
             //int MaxVideoBitrate=tsmain.muxrate-10000-8000*1.5*IsAudioPresent; //MINUS SI/PSI
-            int MaxVideoBitrate = VideoBitrate * 1.0012; //*1.0012 for 50fps
+            static int MaxVideoBitrate = VideoBitrate ; //*1.0012 for 50fps
             TotalFrameSize = tsframe.size;
-            float TimeToTransmitFrameUs = ((float)(TotalFrameSize)*8.0 * 1e3 * 1.00 / (float)MaxVideoBitrate); //in ms
+            float TimeToTransmitFrameUs = ((float)(TotalFrameSize)*8.0 * 1e3  / (float)MaxVideoBitrate); //in ms
             static int64_t previous_cpb_final_arrival_time = 0;
 
+            Statistic_Len+=TotalFrameSize;
+            Statistic_Frame++;
             if (Time == NULL) //Frame base calculation
             {
 
@@ -2504,23 +2521,26 @@ class TSEncaspulator
 
                 /*if (TimeToTransmitFrameUs < 5)
                     TimeToTransmitFrameUs = 15; // Mini 1ms for 1 frame*/
+                
 
                 if (previous_cpb_final_arrival_time == 0)
                     previous_cpb_final_arrival_time = ((key_frame - 1) * FrameDuration) * 90LL * 300LL;
                 
                 
                 tsframe.cpb_initial_arrival_time = previous_cpb_final_arrival_time;
-                if(tsframe.cpb_initial_arrival_time<=(LastPCR+2)*27000LL) //2ms margin
+                if(tsframe.cpb_initial_arrival_time<=(LastPCR+5)*27000LL) //2ms margin
                 {
-                     fprintf(stderr,"Correct arrival %lld -> %lld \n",tsframe.cpb_initial_arrival_time/27000LL,LastPCR+1);
+                     //fprintf(stderr,"Correct arrival %lld -> %lld \n",tsframe.cpb_initial_arrival_time/27000LL,LastPCR+1);
                     tsframe.cpb_initial_arrival_time=(LastPCR+5)*27000LL; // 5ms
                    
                 }
                 
+
+
                 if (tsframe.frame_type == LIBMPEGTS_CODING_TYPE_SLICE_P)
                 {
                     tsframe.cpb_final_arrival_time = previous_cpb_final_arrival_time = tsframe.cpb_initial_arrival_time + (TimeToTransmitFrameUs)*90LL * 300LL;
-                    int PCR_PTS=((key_frame * FrameDuration + DelayPTS)-tsframe.cpb_final_arrival_time/27000L);
+                    int64_t PCR_PTS=((key_frame * FrameDuration + DelayPTS)-tsframe.cpb_final_arrival_time/27000L);
                     //fprintf(stderr,"P arrival %lld pts %lld PCR/PTS %d\n",tsframe.cpb_final_arrival_time/27000L,(int64_t)((key_frame * FrameDuration + DelayPTS) ),PCR_PTS);
                     if(PCR_PTS>5 ) //margin 5ms
                         vdts = vpts = (key_frame * FrameDuration + DelayPTS) * 90LL;
@@ -2528,9 +2548,9 @@ class TSEncaspulator
                     {
                         
                         vdts = vpts = (key_frame * FrameDuration + DelayPTS +5-PCR_PTS)*90LL; //5ms
-                        fprintf(stderr,"P Picture Late Correct %lld\n",PCR_PTS);
+                        //fprintf(stderr,"P Picture Late Correct %lld\n",PCR_PTS);
                     }
-                    
+                     
                 }
                 else // I PICTURE : try to resynchronize if bitrate drift
                 {
@@ -2538,16 +2558,21 @@ class TSEncaspulator
                     tsframe.cpb_final_arrival_time = previous_cpb_final_arrival_time = (key_frame * FrameDuration) * 90LL * 300LL;
                     
                     //tsframe.cpb_final_arrival_time = previous_cpb_final_arrival_time = tsframe.cpb_initial_arrival_time + (TimeToTransmitFrameUs)*90LL * 300LL;
-                    int PCR_PTS=((key_frame * FrameDuration + DelayPTS)-tsframe.cpb_final_arrival_time/27000L);
-                    //fprintf(stderr,"I arrival %lld pts %lld PCR/PTS %d\n",tsframe.cpb_final_arrival_time/27000L,(int64_t)((key_frame * FrameDuration + DelayPTS) ),PCR_PTS);
+                    int64_t PCR_PTS=((key_frame * FrameDuration + DelayPTS)-tsframe.cpb_final_arrival_time/27000L);
+                    fprintf(stderr,"I arrival %lld pts %lld PCR/PTS %d\n",tsframe.cpb_final_arrival_time/27000L,(int64_t)((key_frame * FrameDuration + DelayPTS) ),PCR_PTS);
                     
                     if(PCR_PTS>5 ) //margin 5ms
                         vdts = vpts = (key_frame * FrameDuration + DelayPTS) * 90LL;
                     else
                     {
                        vdts = vpts = (key_frame * FrameDuration + DelayPTS +5-PCR_PTS)*90LL; //5ms
-                         fprintf(stderr,"I Picture Late %lld\n",PCR_PTS);
+                        // fprintf(stderr,"I Picture Late %lld\n",PCR_PTS);
                     }
+                    int StatVideoBitrate=((Statistic_Len*8LL*Videofps)/(Statistic_Frame));
+                    MaxVideoBitrate=StatVideoBitrate;
+                    fprintf(stderr,"Bitrate video = %d over %d Frames , TsVideo %d I picture len %d \n",StatVideoBitrate,Statistic_Frame,(int)(StatVideoBitrate*1.15),TotalFrameSize);
+                    Statistic_Len=0;
+                    Statistic_Frame=0;
                 }
 #else
 
@@ -2663,10 +2688,10 @@ coded_frame->random_access = 1; // Every frame output is a random access point
 ..
 */
 //if(size<100) {fprintf(stderr,"!");return;}
-#define MAX_DRIFT_MS 200
+#define MAX_DRIFT_MS 400
         static uint64_t AudioFrame = 0;
         ts_frame_t tsframe;
-
+        static bool Init=true;
         //static float TimeToTransmitFrameUs=0;
         int len;
         double pts_increment;
@@ -2676,38 +2701,52 @@ coded_frame->random_access = 1; // Every frame output is a random access point
         tsframe.random_access = 1;
         //pts_increment=(2048*90.0)/48.0;
         pts_increment = (2048 * 90.0 * 1000.0) / (float)( AUDIO_SAMPLERATE);
+
         static int64_t FrameAudioToSkip = 0;
 
         int64_t DriftAudio = vpts - (AudioFrame * pts_increment);
         //fprintf(stderr,"Drift %lld\n",DriftAudio/90L);
+        
          //AudioFrame = vpts/ pts_increment;   
+         /*if((Init==false)&&(vpts!=0))
+         {
+
+            
+            int64_t OldAudioFrame=AudioFrame;
+            AudioFrame = vpts/ pts_increment;   
+           // FrameAudioToSkip=OldAudioFrame-AudioFrame;
+            if(FrameAudioToSkip<0) FrameAudioToSkip=0;
+            fprintf(stderr,"Drift %lld To Skip %d\n",DriftAudio/90L,FrameAudioToSkip); 
+            Init=true;
+         }*/
          
-        if (abs(DriftAudio) > MAX_DRIFT_MS * 90L)
+        /*if (abs(DriftAudio) > MAX_DRIFT_MS * 90L)
         {
             
-            int OldAudioFrame=AudioFrame;
+            int64_t OldAudioFrame=AudioFrame;
             AudioFrame = vpts/ pts_increment;   
-            FrameAudioToSkip=OldAudioFrame-AudioFrame;
+            //FrameAudioToSkip=OldAudioFrame-AudioFrame;
             if(FrameAudioToSkip<0) FrameAudioToSkip=0;
-            fprintf(stderr, "===========   Audio Drift %lld Correction %lld ToSkip %d ===========\n",AudioFrame,(int64_t) (vpts/ pts_increment),FrameAudioToSkip);
+            fprintf(stderr, "===========   Audio Drift %lld : OldFrame=%lld NewFrame= %lld Correction %lld ToSkip %d ===========\n",DriftAudio/90,OldAudioFrame,AudioFrame,(int64_t) (vpts/ pts_increment),FrameAudioToSkip);
             //OffsetFromVideo = vpts - AudioFrame * pts_increment;
             //fprintf(stderr, "===========   Audio Drift %lld Correction =%lld\n", DriftAudio / 90L, OffsetFromVideo / 90LL);
         }
        else
        {
            
-       }
+       }*/
             
 
         
-        if(FrameAudioToSkip==0)  
+        if((FrameAudioToSkip==0)&&Init)  
         {
-            AudioFrame++;
+           
              tsframe.dts = pts_increment * (AudioFrame)  + (DelayPTS)*90LL; // pts_increment*AudioFrame+DelayPTS*90L;
              tsframe.pts = pts_increment * (AudioFrame)  + DelayPTS * 90LL; //  pts_increment*AudioFrame+DelayPTS*90L;
        
-            fprintf(stderr,"apts %lld vpts %lld -> %lld\n",tsframe.dts/90,vpts/90,(tsframe.dts-vpts)/90);                                                                            //fprintf(stderr,"Keyframe %lld Video dts=%lld,pts=%lld Audio Size = %d dts=%lld,pts=%lld\n",key_frame, vdts / 90, vpts / 90,size, tsframe.dts / 90, tsframe.pts / 90);
+            //fprintf(stderr,"apts %lld vpts %lld -> %lld\n",tsframe.dts/90,vpts/90,(tsframe.dts-vpts)/90);                                                                            //fprintf(stderr,"Keyframe %lld Video dts=%lld,pts=%lld Audio Size = %d dts=%lld,pts=%lld\n",key_frame, vdts / 90, vpts / 90,size, tsframe.dts / 90, tsframe.pts / 90);
             int ret =ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
+             AudioFrame++;
         }    
         else
         {
@@ -2926,35 +2965,38 @@ class AudioEncoder
             return true;
     }
 
-    bool EncodeFrame(void)
+    bool EncodeFrame(bool purge)
     {
         if (AudioIn != NULL)
         {
             int n = 0;
             int ret = ioctl(fileno(AudioIn), FIONREAD, &n);
-            if ((ret < 0) || (n < 2048 * 2 * 2))
+            //fprintf(stderr,"Fill audio buffer %d\n",n);
+            
+            if(purge)
             {
-                //memset(inputBuffer, 0, sizeof(inputBuffer));
-                //fprintf(stderr,"Fill audio\n");
-                return false;
-                //memcpy(inputBuffer,SinBuffer,sizeof(inputBuffer));
+                while(n>2048 * 2 * 2 * 4) //Purge buffer if >4
+                {
+                    fread(inputBuffer, 2, 2048 * 2, AudioIn);
+                    fprintf(stderr,"Purging audio %d\n",n);
+                    ioctl(fileno(AudioIn), FIONREAD, &n);
+                } 
+            }
+
+            if(n<2048 * 2 * 2)  fprintf(stderr,"Buffer audio underflow %d\n",n);
+            if ((ret < 0) || (n == 0))
+            {
+                memset(inputBuffer, 0, sizeof(inputBuffer));
+                fprintf(stderr,"Fill audio\n");
+                    NbFrameEncoded++;
+                               //memcpy(inputBuffer,SinBuffer,sizeof(inputBuffer));
             }
             else
+            
             {
-             
-               //int BlockAvailable=n/(2048*2*2);
-               //fprintf(stderr,"Audio pipe input block %d\n",BlockAvailable);
-               if(NbFrameEncoded<0/*20*/)
-               {
-                   fread(inputBuffer, 2, 2048 * 2, AudioIn);
-                   NbFrameEncoded++;
-                   return false; //Purge starting audio buffer
-               }
-               else
-               {
                    ret = fread(inputBuffer, 2, 2048 * 2, AudioIn);
                    NbFrameEncoded++;
-               }   
+                  
             }   
         }
         else
@@ -3011,6 +3053,13 @@ class AudioEncoder
             return true;
         }
     }
+
+     bool EncodeFrame(int NbFrame)
+     {
+         for(int i=0;i<NbFrame;i++)
+            EncodeFrame(false);
+         return true;
+     }
 };
 
 using namespace rpi_omx;
@@ -3099,6 +3148,7 @@ class CameraTots
     int EncVideoBitrate;
     bool FirstTime = true;
     uint64_t key_frame = 0;
+    uint64_t audio_key_frame=1;
     VideoFromat CurrentVideoFormat;
     int DelayPTS;
     struct timespec InitTime;
@@ -3378,12 +3428,32 @@ class CameraTots
                 //tsencoder.AddFrame(encBuffer.data(),encBuffer.dataSize(),OmxFlags,key_frame,DelayPTS/*,&gettime_now*/);
 
                 tsencoder.AddFrame(encBuffer.data(), encBuffer.dataSize(), OmxFlags, key_frame, DelayPTS);
+
+                if (TxAudio&&!want_quit)
+            {
+                static float time_frame=1.0/Videofps;
+                static float time_audioframe=2048.0/(float)AUDIO_SAMPLERATE;
+
+                while(audio_key_frame*time_audioframe<=(key_frame*time_frame))
+                {
+                    
+                    audioencoder.EncodeFrame(audio_key_frame==1); //purge only first audio frames
+                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS-time_audioframe*1e3 /*,&gettime_now*/);
+                    audio_key_frame++;
+                }    
+               
+                
+            }
             }
             else
             {
+                 encoder.getEncoderStat(encBuffer.flags());
                 key_frame++; //Skipped Frame, key_frame++ to allow correct timing for next valid frames
                 fprintf(stderr, "Skip frame!\n");
             }
+
+            
+        
             /* if(m_RowBySlice) //No I picture with this mode ?!
                 {
 				    if(((key_frame-1)%(m_IDRPeriod)>=m_IDRPeriod-2))
@@ -3424,16 +3494,7 @@ class CameraTots
              usleep(1000);
         }
         
-        // *********** AUDIO ******************
-            if (TxAudio)
-            {
-
-                while (audioencoder.EncodeFrame()) //fixme 40 depend framerate
-                {
-                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, -200 /*,&gettime_now*/);
-                }
-                return;
-            }
+         
         //===== test Audio =====
         //#define WITH_AUDIO 1
 
@@ -3514,6 +3575,7 @@ class PictureTots
     int EncVideoBitrate;
     bool FirstTime = true;
     uint key_frame = 0;
+    uint audio_key_frame=1;
     VideoFromat CurrentVideoFormat;
     int DelayPTS;
     int Videofps;
@@ -3889,25 +3951,33 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
 
                 tsencoder.AddFrame(encBuffer.data(), encBuffer.dataSize(), OmxFlags, key_frame, DelayPTS /*,&gettime_now*/);
 
-                // *********** AUDIO ******************
-            if (TxAudio)
-            {
-
-                while (audioencoder.EncodeFrame()) //fixme 40 depend framerate
-                {
-                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, 0 /*,&gettime_now*/);
-                }
-                
-            }
+               
                 
             }
             else
             {
                 //usleep_exactly(1e6/(2*Videofps));
+                encoder.getEncoderStat(encBuffer.flags());
                 key_frame++; //Skipped Frame, key_frame++ to allow correct timing for next valid frames
-                fprintf(stderr, "Skip frame!%ld\n", key_frame);
+                fprintf(stderr, "----------------------------- Skip frame!%ld----------------------------\n", key_frame);
             }
+            
+             // *********** AUDIO ******************
+             if (TxAudio)
+            {
+                static float time_frame=1.0/Videofps;
+                static float time_audioframe=2048.0/(float)AUDIO_SAMPLERATE;
 
+                while(audio_key_frame*time_audioframe<=(key_frame*time_frame))
+                {
+                    
+                    audioencoder.EncodeFrame(audio_key_frame==1); //purge only first audio frames
+                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS-time_audioframe*1e3 /*,&gettime_now*/);
+                    audio_key_frame++;
+                }    
+               
+                
+            }
             
             // Buffer flushed, request a new buffer to be filled by the encoder component
             encBuffer.setFilled(false);
@@ -3934,9 +4004,20 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
             }
             if (Mode == Mode_V4L2)
             {
+                static int countdebug=0;
+                 struct timespec gettime_now, first_time;
+                long time_difference;
+                clock_gettime(CLOCK_REALTIME, &first_time);
 
-                auto frame = pwebcam->frame(2);
+                auto frame = pwebcam->frame(1);
 
+                 time_difference = gettime_now.tv_nsec - first_time.tv_nsec;
+                if (time_difference < 0)
+                    time_difference += 1E9;
+                    
+                //if(countdebug++%25==0)
+                    //fprintf(stderr, "V4L time=%.2f us\n", time_difference / 1e7);
+                
                 filledLen = frame.size;
                 //if(filledLen==0)
                 // fprintf(stderr,"V4L2 %d\n",filledLen);
