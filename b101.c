@@ -561,7 +561,8 @@ void start_camera_streaming(int fd)
 
 void stop_camera_streaming(int fd)
 {
-   write_regs(fd, stop_cmds, NUM_REGS_STOP);
+   
+      write_regs(fd, stop_cmds, NUM_REGS_STOP);
 }
 
 B101::B101()
@@ -664,7 +665,10 @@ bool B101::Start()
 
 B101::~B101()
 {
-   stop_camera_streaming(i2c_fd);
+   if(IsPresent())
+   {
+      stop_camera_streaming(i2c_fd);
+   }   
    close(i2c_fd);
 }
 
