@@ -585,7 +585,7 @@ const YUV420Image &Webcam::frame(int timeout)
             return yuv420frame;
         }
         else
-            fprintf(stderr,"#");
+            fprintf(stderr,"V4L Skip Frame\n");
         /* EAGAIN - continue select loop. */
     }
 }
@@ -595,7 +595,9 @@ bool Webcam::read_frame()
 
     struct v4l2_buffer buf;
     //unsigned int i;
-
+    static struct timeval	old_timestamp;
+    static int FrameCount=0;
+    static int64_t DiffTotal=0;
     CLEAR(buf);
 
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -617,9 +619,20 @@ bool Webcam::read_frame()
             throw runtime_error("VIDIOC_DQBUF");
         }
     }
-
+    int64_t FrameDiff=40000;
+    if(FrameCount>0)
+    {
+        FrameDiff=buf.timestamp.tv_usec-old_timestamp.tv_usec;
+        if(FrameDiff<0) FrameDiff+=1e6;
+        
+    }   
+    DiffTotal+=FrameDiff; 
+    old_timestamp.tv_usec=buf.timestamp.tv_usec;
+    FrameCount++;
+    
     assert(buf.index < n_buffers);
-    //fprintf(stderr,"Image =%d/%d\n",buf.bytesused,buffers[buf.index].size);
+    if(FrameDiff>50000)
+        fprintf(stderr,"Average time %lld Image %ld =%d/%d\n",DiffTotal/FrameCount,FrameDiff,buf.index,buf.bytesused,buffers[buf.index].size);
     if (buf.bytesused == buffers[buf.index].size)
     {
         ConvertColor(yuv420frame.data, (unsigned char *)buffers[buf.index].data);

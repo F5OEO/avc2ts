@@ -3902,7 +3902,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
         {
 
             //encoder.getEncoderStat(encBuffer.flags());
-            encoder.setDynamicBitrate(EncVideoBitrate);
+            //encoder.setDynamicBitrate(EncVideoBitrate);
             //fprintf(stderr,"Len = %"\n",encBufferLow
             /*if(key_frame%250==0)
 				{
@@ -4015,10 +4015,10 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                 while(audio_key_frame*NbAudioSample<=(key_frame*NbVideoSample))
                 {
                     //fprintf(stderr,"Audio\n");
-                    while(audioencoder.EncodeFrame(audio_key_frame==1)==false)
+                   /* while(audioencoder.EncodeFrame(audio_key_frame==1)==false)
                     { //purge always  audio frames USB AUDIO is too high rate
                         //mettre audio frame et calculer le pts pas par vpts 
-                         tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS-40 /*,&gettime_now*/);
+                         tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS-40);
                          audio_key_frame++;        
                          Correct++;
                          
@@ -4032,8 +4032,10 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                         fprintf(stderr,"Correct A%d/V%d remaining%d\n",Correct,Correct_frame,RemainingCorrect);
                         
                             
-                    }    
+                    }
+                    */    
                     //120ms is 3 pictures....need 
+                    audioencoder.EncodeFrame(audio_key_frame==1);
                     tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS-(3*time_frame*1000)/90/*,&gettime_now*/);
                     audio_key_frame++;
                     
@@ -4091,24 +4093,25 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
             }
             if (Mode == Mode_GRABDISPLAY)
             {
-                struct timespec gettime_now, first_time;
+                static struct timespec gettime_now, first_time;
                 long time_difference;
-                clock_gettime(CLOCK_REALTIME, &first_time);
+                
 
+                
                 pgrabdisplay->GetPicture();
                 clock_gettime(CLOCK_REALTIME, &gettime_now);
                 time_difference = gettime_now.tv_nsec - first_time.tv_nsec;
                 if (time_difference < 0)
                     time_difference += 1E9;
                 fprintf(stderr, "Grab time=%ld us\n", time_difference / 1000);
-
+                clock_gettime(CLOCK_REALTIME, &first_time);
                 int DisplayWidth, DisplayHeight, Rotate;
 
                 pgrabdisplay->GetDisplaySize(DisplayWidth, DisplayHeight, Rotate);
                 filledLen = PictureBuffer.allocSize(); //DisplayWidth*DisplayHeight*4;
-
-                //fprintf(stderr,"%d filled\n",filledLen);
                 usleep_exactly(1e6 / Videofps);
+                //fprintf(stderr,"%d filled\n",filledLen);
+                
             }
 
             if (Mode == Mode_VNCCLIENT)
@@ -4153,7 +4156,10 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
             }
         }
         else
-            usleep(1000);
+        {
+            //fprintf(stderr,"sleep\n");
+            usleep(100);
+        }   
     }
 
     void Terminate()
