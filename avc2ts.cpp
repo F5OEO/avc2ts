@@ -1659,6 +1659,15 @@ LOW_LATENCY mode is not a mode intended for general use. There was a specific us
         QPMax->nPortIndex = OPORT;
         QPMax->nU32 = QMax;
         ERR_OMX(OMX_SetParameter(component_, OMX_IndexParamBrcmVideoEncodeMaxQuant, &QPMax), " QPMax");
+
+
+        // Make an average Qp on startup , maybe use OMX_IndexParamBrcmVideoPrecodeForQP instead
+        Parameter<OMX_PARAM_U32TYPE> InitialQp;
+        InitialQp->nPortIndex = OPORT;
+        InitialQp->nU32 = 30;
+        ERR_OMX(OMX_SetParameter(component_, OMX_IndexParamBrcmVideoInitialQuant, &InitialQp), " Qinitial");
+
+        
     }
 
     void setQFromBitrate(int Bitrate, int fps, int Width, int Height, int MotionType = 0)
@@ -2506,6 +2515,7 @@ class TSEncaspulator
 
             Statistic_Len+=TotalFrameSize;
             Statistic_Frame++;
+            int64_t PCR_PTS=0;
             if (Time == NULL) //Frame base calculation
             {
 
@@ -2536,11 +2546,12 @@ class TSEncaspulator
                 }
                 
                 
+                
 
                 if (tsframe.frame_type == LIBMPEGTS_CODING_TYPE_SLICE_P)
                 {
                     tsframe.cpb_final_arrival_time = previous_cpb_final_arrival_time = tsframe.cpb_initial_arrival_time + (TimeToTransmitFrameUs)*90LL * 300LL;
-                    int64_t PCR_PTS=((key_frame * FrameDuration + DelayPTS)-tsframe.cpb_final_arrival_time/27000L);
+                    PCR_PTS=((key_frame * FrameDuration + DelayPTS)-tsframe.cpb_final_arrival_time/27000L);
                         
                     //fprintf(stderr,"P arrival %lld pts %lld PCR/PTS %d\n",tsframe.cpb_final_arrival_time/27000L,(int64_t)((key_frame * FrameDuration + DelayPTS) ),PCR_PTS);
                     if(PCR_PTS>5 ) //margin 5ms
@@ -2564,8 +2575,8 @@ class TSEncaspulator
                     tsframe.cpb_final_arrival_time = previous_cpb_final_arrival_time = (key_frame * FrameDuration) * 90LL * 300LL;
                     
                     //tsframe.cpb_final_arrival_time = previous_cpb_final_arrival_time = tsframe.cpb_initial_arrival_time + (TimeToTransmitFrameUs)*90LL * 300LL;
-                    int64_t PCR_PTS=((key_frame * FrameDuration + DelayPTS)-tsframe.cpb_final_arrival_time/27000L);
-                   // fprintf(stderr,"I arrival %lld pts %lld PCR/PTS %d\n",tsframe.cpb_final_arrival_time/27000L,(int64_t)((key_frame * FrameDuration + DelayPTS) ),PCR_PTS);
+                    PCR_PTS=((key_frame * FrameDuration + DelayPTS)-tsframe.cpb_final_arrival_time/27000L);
+                    //fprintf(stderr,"I arrival %lld pts %lld PCR/PTS %d\n",tsframe.cpb_final_arrival_time/27000L,(int64_t)((key_frame * FrameDuration + DelayPTS) ),PCR_PTS);
                     
                     if(PCR_PTS>5 ) //margin 5ms
                         vdts = vpts = (key_frame * FrameDuration + DelayPTS) * 90LL;
@@ -2576,7 +2587,7 @@ class TSEncaspulator
                     }
                     int StatVideoBitrate=((Statistic_Len*8LL*Videofps)/(Statistic_Frame));
                     MaxVideoBitrate=StatVideoBitrate;
-                    //fprintf(stderr,"Bitrate video = %d over %d Frames , TsVideo %d I picture len %d \n",StatVideoBitrate,Statistic_Frame,(int)(StatVideoBitrate*1.15),TotalFrameSize);
+                    fprintf(stderr,"Bitrate video = %d over %d Frames , TsVideo %d I picture len %d \n",StatVideoBitrate,Statistic_Frame,(int)(StatVideoBitrate*1.15),TotalFrameSize);
                     Statistic_Len=0;
                     Statistic_Frame=0;
                 }
@@ -2608,7 +2619,7 @@ class TSEncaspulator
             tsframe.ref_pic_idc = 0; //Fixme (frame->pict_type == AV_PICTURE_TYPE_B) ? 1 : 0
             tsframe.write_pulldown_info = 0;
 
-            if (key_frame >= 1) //Skip first frame(s)
+            if ((key_frame >= 1)/*&&(PCR_PTS>-200)*/) //Skip first frame(s)
             {
 
                 ret = ts_write_frames(writer, &tsframe, 1, &out, &len, &pcr_list);
@@ -2993,7 +3004,7 @@ class AudioEncoder
             //if(n<2048 * 2 * 2)  fprintf(stderr,"Buffer audio underflow %d\n",n);
             if ((ret < 0) || (n == 0))
             {
-                usleep(5); //let stay 5ms in case of we can get audio
+                usleep(400000); //let stay 5ms in case of we can get audio
                 ioctl(fileno(AudioIn), FIONREAD, &n);
                 if(n<2048 * 2 * 2)
                 {
@@ -3463,7 +3474,7 @@ class CameraTots
                 {
                     
                     audioencoder.EncodeFrame(audio_key_frame==1); //purge only first audio frames
-                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS-time_audioframe*1e3 /*,&gettime_now*/);
+                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS-3*time_audioframe*1e3 /*,&gettime_now*/);
                     audio_key_frame++;
                 }    
                
@@ -3718,6 +3729,7 @@ class PictureTots
 	*/
         encoder.setProfileLevel(OMX_VIDEO_AVCProfileHigh);
         encoder.setQPLimits(1, 51); // To have high bitrate even at low fps and size : for Now a MUST
+        encoder.requestIFrame();
         // With Main Profile : have more skipped frame
         tsencoder.SetOutput(FileName, Udp);
         tsencoder.ConstructTsTree(VideoBitrate, TsBitrate, PMTPid, sdt, fps, 1,audiobitrate);
@@ -3890,7 +3902,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
         {
 
             //encoder.getEncoderStat(encBuffer.flags());
-            //encoder.setDynamicBitrate(EncVideoBitrate);
+            encoder.setDynamicBitrate(EncVideoBitrate);
             //fprintf(stderr,"Len = %"\n",encBufferLow
             /*if(key_frame%250==0)
 				{
@@ -3995,8 +4007,8 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                 static float time_frame=90.0/Videofps;
                 static float time_audioframe=2048.0*90/((float)AUDIO_SAMPLERATE);
                 
-                int NbVideoSample=AUDIO_SAMPLERATE/25;//960
-                int NbAudioSample=2048;
+                int NbVideoSample=AUDIO_SAMPLERATE*1000/Videofps;//960
+                int NbAudioSample=2048*1000;
                 int Correct=0;
                 static int RemainingCorrect=0;
                 //fprintf(stderr,"V %d A %d \n",(key_frame*NbVideoSample),NbAudioSample*audio_key_frame);
@@ -4022,7 +4034,7 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
                             
                     }    
                     //120ms is 3 pictures....need 
-                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS-(2*time_frame*1000)/90/*,&gettime_now*/);
+                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS-(3*time_frame*1000)/90/*,&gettime_now*/);
                     audio_key_frame++;
                     
                 }    
