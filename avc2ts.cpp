@@ -2614,7 +2614,7 @@ class TSEncaspulator
             tsframe.dts = vdts;
             tsframe.pts = vpts;
             //fprintf(stderr,"TotalFrameSize %d Tx time %f Video Init time = %lld final %lld dts=%lld ms,pts=%lld\n",TotalFrameSize,TimeToTransmitFrameUs,tsframe.cpb_initial_arrival_time/(27000LL),tsframe.cpb_final_arrival_time/27000LL,vdts/90,vpts/90);
-            tsframe.random_access = 1; //key_frame;
+            tsframe.random_access = ((tsframe.frame_type & LIBMPEGTS_CODING_TYPE_SLICE_IDR) == LIBMPEGTS_CODING_TYPE_SLICE_IDR)?1:0; //key_frame;
             tsframe.priority = key_frame;
             tsframe.ref_pic_idc = 0; //Fixme (frame->pict_type == AV_PICTURE_TYPE_B) ? 1 : 0
             tsframe.write_pulldown_info = 0;
@@ -2644,8 +2644,13 @@ class TSEncaspulator
             else
                 len = 0;
 
-            if (len > 0)
+
+            static int NbIPicture=0;
+            if(tsframe.random_access==1) NbIPicture++;
+            if ((len > 0)/*&&(NbIPicture>2)*/) // Latency : Wait 3 GOP before transmit to avoid Burst at beginning
             {
+                
+                //fprintf(stderr, "Muxed VIDEO len: %d %lld\n", len, key_frame);
                 //while(len>0)
                 {
                     /*if(len>10000)
@@ -4002,47 +4007,22 @@ int ConvertColor(OMX_U8 *out,OMX_U8 *in,int Size)
             }
             
              // *********** AUDIO ******************
-             if (TxAudio)
+                if (TxAudio&&!want_quit)
             {
-                static float time_frame=90.0/Videofps;
-                static float time_audioframe=2048.0*90/((float)AUDIO_SAMPLERATE);
-                
-                int NbVideoSample=AUDIO_SAMPLERATE*1000/Videofps;//960
-                int NbAudioSample=2048*1000;
-                int Correct=0;
-                static int RemainingCorrect=0;
-                //fprintf(stderr,"V %d A %d \n",(key_frame*NbVideoSample),NbAudioSample*audio_key_frame);
-                while(audio_key_frame*NbAudioSample<=(key_frame*NbVideoSample))
+                static float time_frame=1.0/Videofps;
+                static float time_audioframe=2048.0/(float)AUDIO_SAMPLERATE;
+
+                while(audio_key_frame*time_audioframe<=(key_frame*time_frame))
                 {
-                    //fprintf(stderr,"Audio\n");
-                   /* while(audioencoder.EncodeFrame(audio_key_frame==1)==false)
-                    { //purge always  audio frames USB AUDIO is too high rate
-                        //mettre audio frame et calculer le pts pas par vpts 
-                         tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS-40);
-                         audio_key_frame++;        
-                         Correct++;
-                         
-                    }
-                    if(Correct>0)
-                    {
-                         
-                        int Correct_frame=(Correct*NbAudioSample+RemainingCorrect)/NbVideoSample;
-                        key_frame+=Correct_frame;
-                        RemainingCorrect=(Correct*NbAudioSample+RemainingCorrect)%NbVideoSample;
-                        fprintf(stderr,"Correct A%d/V%d remaining%d\n",Correct,Correct_frame,RemainingCorrect);
-                        
-                            
-                    }
-                    */    
-                    //120ms is 3 pictures....need 
-                    audioencoder.EncodeFrame(audio_key_frame==1);
-                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS-(3*time_frame*1000)/90/*,&gettime_now*/);
-                    audio_key_frame++;
                     
+                    audioencoder.EncodeFrame(audio_key_frame==1); //purge only first audio frames
+                    tsencoder.AddAudioFrame(audioencoder.EncodedFrame, audioencoder.FrameSize, key_frame, DelayPTS-3*time_audioframe*1e3 /*,&gettime_now*/);
+                    audio_key_frame++;
                 }    
                
                 
             }
+             
             
             // Buffer flushed, request a new buffer to be filled by the encoder component
             encBuffer.setFilled(false);

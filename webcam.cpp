@@ -631,8 +631,8 @@ bool Webcam::read_frame()
     FrameCount++;
     
     assert(buf.index < n_buffers);
-    if(FrameDiff>50000)
-        fprintf(stderr,"Average time %lld Image %ld =%d/%d\n",DiffTotal/FrameCount,FrameDiff,buf.index,buf.bytesused,buffers[buf.index].size);
+   // if(FrameDiff>50000)
+        //fprintf(stderr,"Average time %lld Image %ld %d=%d/%d\n",DiffTotal/FrameCount,FrameDiff,buf.index,buf.bytesused,buffers[buf.index].size);
     if (buf.bytesused == buffers[buf.index].size)
     {
         ConvertColor(yuv420frame.data, (unsigned char *)buffers[buf.index].data);
