@@ -2647,7 +2647,7 @@ class TSEncaspulator
 
             static int NbIPicture=0;
             if(tsframe.random_access==1) NbIPicture++;
-            if ((len > 0)/*&&(NbIPicture>2)*/) // Latency : Wait 3 GOP before transmit to avoid Burst at beginning
+            if ((len > 0)&&(NbIPicture>2)) // Latency : Wait 3 GOP before transmit to avoid Burst at beginning
             {
                 
                 //fprintf(stderr, "Muxed VIDEO len: %d %lld\n", len, key_frame);
